@@ -1,0 +1,31 @@
+from syslib import (
+  Sysout, 
+  List, 
+  String,
+)
+
+@exec int main ~List[String] argv {
+  lvls := argv[0]
+  printPyramid (lvls - ONE) lvls 
+  return ZERO
+}
+
+printPyramid ~int lvl ~int max {
+  returnif (lvl < ZERO)
+
+  printStars (max - lvl)
+
+  if (lvl = ONE) {
+    printPyramid (lvl - ONE) max
+  }
+
+  printStars (max - lvl)
+}
+
+printStars ~int num {
+  loop num {
+    sysout STAR
+  }
+
+  sysout NEWLINE
+}

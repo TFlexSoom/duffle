@@ -1,0 +1,5 @@
+from syslib import sysout
+
+@exec main {
+  sysout MSG
+}

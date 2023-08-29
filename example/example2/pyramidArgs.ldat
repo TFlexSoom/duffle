@@ -1,0 +1,4 @@
+ZERO = 0
+ONE = 1
+STAR = '*'
+NEWLINE = '\n'
