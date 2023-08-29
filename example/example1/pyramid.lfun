@@ -1,9 +1,15 @@
 use sysout
 
+
+>> int ONE
+-> int LEVELS
+
 @exec main {
   printPyramid (LEVELS - ONE) LEVELS 
 }
 
+>> int ZERO
+>> int ONE
 printPyramid ~int lvl ~int max {
   returnif (lvl < ZERO)
 
@@ -16,6 +22,8 @@ printPyramid ~int lvl ~int max {
   printStars (max - lvl)
 }
 
+>> char STAR
+>> char NEWLINE
 printStars ~int num {
   loop num {
     sysout STAR

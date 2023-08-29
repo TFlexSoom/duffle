@@ -4,6 +4,11 @@ use (
   String,
 )
 
+>> int ZERO
+>> int ONE
+>> char STAR
+>> char NEWLINE
+
 @exec int main ~List[String] argv {
   lvls := argv[0]
   printPyramid (lvls - ONE) lvls 

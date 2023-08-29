@@ -1,5 +1,6 @@
 use sysout
 
+>> string MSG
 @exec main {
   sysout MSG
 }
