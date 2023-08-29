@@ -1,4 +1,4 @@
-from syslib import sysout
+use sysout
 
 @exec main {
   printPyramid (LEVELS - ONE) LEVELS 
