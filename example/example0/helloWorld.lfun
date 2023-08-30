@@ -1,7 +1,9 @@
-use ()
+use sysout
 
 >> string MSG
 
 @exec main {
+  MSG;
   sysout MSG
 }
+
