@@ -19,7 +19,12 @@ func main() {
 		log.Fatalf("Error: %v\n", err)
 	}
 
-	_, err = parsing.GetParser().Parse(file, r)
+	parser, err := parsing.GetParser()
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+
+	_, err = parser.Parse(file, r)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}

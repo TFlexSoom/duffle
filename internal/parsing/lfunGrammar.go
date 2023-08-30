@@ -13,21 +13,38 @@ import (
 )
 
 //// Lexer
-func getLexer() *lexer.StatefulDefinition {
-	return lexer.MustSimple([]lexer.SimpleRule{
+func getLexer() (*lexer.StatefulDefinition, error) {
+	return lexer.NewSimple([]lexer.SimpleRule{
 		{"Ident", `[a-zA-Z]+[a-zA-Z\d]+\w*`},
-		{"Whitespace", `[ \t]+`},
-		{"EOL", `[\r]?[\n]`},
-		{"Operator", `[!\d\w]+[\w]*`},
-		{"Backtick", "`"},
+		{"WHITESPACE", `[ \t]+`},
+		{"EOL", `\n`},
+		{"OPERATOR", `[!\d\w]+[\w]*`},
+		{"BACKTICK", "`"},
+		{"USE", "use"},
+		{"@", "@"},
+		{`"("`, "("},
+		{`")"`, ")"},
+		{"->", "->"},
+		{">>", ">>"},
+		{"<-", "<-"},
+		{"<<", "<<"},
+		{"~", "~"},
+		{"{", "{"},
+		{"}", "}"},
+		{",", ","},
+		{";", ";"},
 	})
 }
 
-func GetParser() *participle.Parser[Module] {
-	return participle.MustBuild[Module](
-		participle.Lexer(getLexer()),
+func GetParser() (*participle.Parser[Module], error)	 {
+	var lexer, err = getLexer()
+	if err != nil {
+		return nil, err
+	}
+
+	return participle.Build[Module](
+		participle.Lexer(lexer),
 		participle.Elide("Whitespace"),
-		participle.UseLookahead(2),
 		participle.Union[Expression](
 			DelayedExpression{},
 			ResolvingExpression{},
@@ -43,16 +60,16 @@ func GetParser() *participle.Parser[Module] {
 type Module struct {
 	Pos lexer.Position
 
-	Imports []*Import `("use" @@ (EOL)+)*`
-	Configs []*Config `(( "->" | ">>" ) @@ (EOL)+)*`
-	Functions []*Function `(@@ (EOL)+)*`
+	Imports []*Import `(Use @@ EOL+)`
+	Configs []*Config `(@@ EOL+)*`
+	Functions []*Function `(@@ EOL+)*`
 }
 
 type Import struct {
 	Pos lexer.Position
 
-	ListImport []string `"(" ( @Ident ( "," (EOL)?  @Ident )* )? ")"`
-	SingleImport string `| @Ident`
+	ListImport []string `"(" EOL+ ( @Ident EOL+ ( , EOL+  @Ident )* )? ")"`
+	// SingleImport string `| @Ident`
 }
 
 type Uniqueness bool
@@ -64,7 +81,7 @@ func (u *Uniqueness) Capture(values []string) error {
 
 type Config struct {
 	Pos lexer.Position
-	IsUnique *Uniqueness `@(">>" | "->")`
+	IsUnique *Uniqueness `@( >> | -> )`
 	Input *Input `@@`
 }
 
@@ -84,11 +101,11 @@ type Function struct {
 	Pos lexer.Position
 
 	Annotations []string `("@" @Ident)*`
-	Type *Type `(?= @@ ("{" | ":" | "~"))`
+	Type *Type `(?= @@ ( { | : | ~ ))`
 	Name string `@Ident`
-	Inputs []*Input `("~" @@)*`
-	Expressions []*Expression `("{" (@@ (";" | EOL))* "}")?`
-	Patterns []*Pattern `(":\n" ( @@ EOL)* EOL)?`
+	Inputs []*Input `(~ @@)*`
+	Expressions []*Expression `( { (@@ (; | EOL))* })?`
+	Patterns []*Pattern `(: EOL ( @@ EOL)* EOL)?`
 }
 
 type Expression interface { 
@@ -145,7 +162,7 @@ type AssignmentExpression struct {
 	Pos lexer.Position
 
 	Name string `@Ident`
-	IsShallow *Shallowness `("<-" | "<<")`
+	IsShallow *Shallowness `@("<-" | "<<")`
 	Value *Expression `@@`
 }
 func (assigning AssignmentExpression) expression() {}
