@@ -5,17 +5,23 @@
 package parsing
 
 import (
+	"regexp"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
 // // Lexer
+const identifierRegexPattern = `[a-zA-Z]+[a-zA-Z\d]+\w*`
+
+var identifierRegex = regexp.MustCompile(identifierRegexPattern)
+
 func getLexer() (*lexer.StatefulDefinition, error) {
 	return lexer.NewSimple([]lexer.SimpleRule{
-		{"IDENTIFIER", `[a-zA-Z]+[a-zA-Z\d]+\w*`},
+		{"IDENTIFIER", identifierRegexPattern},
 		{"WHITESPACE", `[ \t]+`},
 		{"EOL", `(\r)?\n`},
-		// {"OPERATOR", `[^\d\w]+[^\w]*`},
+		{"OPERATOR", `[^-><@\d\w]+[^\w]*`},
 		{"BACKTICK", "`"},
 		{"PUNCTUATION", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
 	})
@@ -31,13 +37,7 @@ func GetParser() (*participle.Parser[Module], error) {
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
 		// participle.UseLookahead(5),
-		participle.Union[Expression](
-			// DelayedExpression{},
-			ResolvingExpression{},
-			ReferenceExpression{},
-			// AssignmentExpression{},
-			// OperatorExpression{},
-		))
+	)
 }
 
 //// Grammar
@@ -45,16 +45,16 @@ func GetParser() (*participle.Parser[Module], error) {
 type Module struct {
 	Pos lexer.Position
 
-	Imports   []*Import   `("use" @@ EOL+)*`
-	Configs   []*Config   `(@@ EOL+)*`
-	Functions []*Function `(@@ EOL+)*`
+	Imports   []*Import   `( "use" @@ EOL+ )*`
+	Configs   []*Config   `( @@ EOL+ )*`
+	Functions []*Function `( @@ EOL* )*`
 }
 
 type Import struct {
 	Pos lexer.Position
 
 	ListImport   []string `"(" ( EOL+ @IDENTIFIER EOL+ ( "," EOL+  @IDENTIFIER )* )? ")"`
-	SingleImport string   `| @IDENTIFIER`
+	SingleImport string   ` | @IDENTIFIER`
 }
 
 type Uniqueness bool
@@ -66,7 +66,7 @@ func (u *Uniqueness) Capture(values []string) error {
 
 type Config struct {
 	Pos      lexer.Position
-	IsUnique *Uniqueness `@("-" | ">" ) ">"`
+	IsUnique *Uniqueness `@( "-" | ">" ) ">"`
 	Input    *Input      `@@`
 }
 
@@ -81,93 +81,34 @@ type Type struct {
 	Name string `@IDENTIFIER`
 }
 
+type FunctionName struct {
+	Name       string
+	IsOperator bool
+}
+
+func (fname *FunctionName) Capture(values []string) error {
+	fname.Name = values[0]
+	fname.IsOperator = !identifierRegex.MatchString(values[0])
+	return nil
+}
+
 type Function struct {
 	Pos lexer.Position
 
-	Annotations []string      `("@" @IDENTIFIER)*`
-	Type        *Type         `(@@ (?= IDENTIFIER "{" | ":" | "~" ))?`
-	Name        string        `@IDENTIFIER`
+	Annotations []string      `( "@" @IDENTIFIER )*`
+	Type        *Type         `( @@ (?= IDENTIFIER ( "{" | ":" | "~" ) ) )?`
+	Name        FunctionName  `( @IDENTIFIER | @OPERATOR )`
 	Inputs      []*Input      `( "~" @@)*`
 	Expressions []*Expression `( "{" EOL* ( @@ (";" | EOL) EOL* )* "}" )?`
 	Patterns    []*Pattern    `( ":" EOL ( @@ EOL )* EOL )?`
 }
 
-type Expression interface {
-	expression()
-	lexPosition() lexer.Position
-}
-
-func (config Config) expression() {}
-func (config Config) lexPosition() lexer.Position {
-	return config.Pos
-}
-
-// type DelayedExpression struct {
-// 	Pos lexer.Position
-
-// 	Expression *Expression `BACKTICK @@ BACKTICK`
-// }
-
-// func (delayed DelayedExpression) expression() {}
-// func (delayed DelayedExpression) lexPosition() lexer.Position {
-// 	return delayed.Pos
-// }
-
-type ResolvingExpression struct {
+type Expression struct {
 	Pos lexer.Position
 
-	Name string        `@IDENTIFIER`
-	Args []*Expression `@@+`
+	Name string      `( @IDENTIFIER | @OPERATOR )`
+	Arg  *Expression `( "(" @@ ")" ) | @@`
 }
-
-func (resolving ResolvingExpression) expression() {}
-func (resolving ResolvingExpression) lexPosition() lexer.Position {
-	return resolving.Pos
-}
-
-type ReferenceExpression struct {
-	Pos lexer.Position
-
-	Name string `@IDENTIFIER`
-}
-
-func (reference ReferenceExpression) expression() {}
-func (reference ReferenceExpression) lexPosition() lexer.Position {
-	return reference.Pos
-}
-
-// type Shallowness bool
-
-// func (isShallow *Shallowness) Capture(values []string) error {
-// 	*isShallow = values[0] == "<-"
-// 	return nil
-// }
-
-// type AssignmentExpression struct {
-// 	Pos lexer.Position
-
-// 	Name      string       `@IDENTIFIER`
-// 	IsShallow *Shallowness `@("<-" | "<<")`
-// 	Value     *Expression  `@@`
-// }
-
-// func (assigning AssignmentExpression) expression() {}
-// func (assigning AssignmentExpression) lexPosition() lexer.Position {
-// 	return assigning.Pos
-// }
-
-// type OperatorExpression struct {
-// 	Pos lexer.Position
-
-// 	Left  *Expression `@@`
-// 	Op    string      `@IDENTIFIER`
-// 	Right *Expression `@@`
-// }
-
-// func (operator OperatorExpression) expression() {}
-// func (operator OperatorExpression) lexPosition() lexer.Position {
-// 	return operator.Pos
-// }
 
 type Pattern struct {
 	Pos lexer.Position

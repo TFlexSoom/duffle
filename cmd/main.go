@@ -6,8 +6,9 @@ import (
 	"os"
 
 	"github.com/tflexsoom/deflemma/internal/parsing"
-)
 
+	"github.com/alecthomas/repr"
+)
 
 // Entry Function
 func main() {
@@ -24,10 +25,12 @@ func main() {
 		log.Fatalf("Error: %v\n", err)
 	}
 
-	_, err = parser.Parse(file, r)
+	ast, err := parser.Parse(file, r)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
+
+	repr.Println(ast)
 
 	log.Println("Done!")
 }
