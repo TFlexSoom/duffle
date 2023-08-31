@@ -18,12 +18,13 @@ var identifierRegex = regexp.MustCompile(identifierRegexPattern)
 
 func getLexer() (*lexer.StatefulDefinition, error) {
 	return lexer.NewSimple([]lexer.SimpleRule{
-		{"IDENTIFIER", identifierRegexPattern},
-		{"WHITESPACE", `[ \t]+`},
 		{"EOL", `(\r)?\n`},
-		{"OPERATOR", `[^-><@\d\w]+[^\w]*`},
+		{"WHITESPACE", `[ \t]+`},
 		{"BACKTICK", "`"},
-		{"PUNCTUATION", `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
+		{"ARROW", `[>-][>]`},
+		{"PUNCTUATION", `[@(){}:;<,>]`},
+		{"IDENTIFIER", identifierRegexPattern},
+		{"OPERATOR", `[^@\d\w]+[^\w]*`},
 	})
 }
 
@@ -37,6 +38,10 @@ func GetParser() (*participle.Parser[Module], error) {
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
 		// participle.UseLookahead(5),
+		participle.Union[Import](
+			ListImport{},
+			SingleImport{},
+		),
 	)
 }
 
@@ -50,23 +55,43 @@ type Module struct {
 	Functions []*Function `( @@ EOL* )*`
 }
 
-type Import struct {
+type Import interface {
+	value()
+	pos() lexer.Position
+}
+
+type ListImport struct {
 	Pos lexer.Position
 
-	ListImport   []string `"(" ( EOL+ @IDENTIFIER EOL+ ( "," EOL+  @IDENTIFIER )* )? ")"`
-	SingleImport string   ` | @IDENTIFIER`
+	Value []string `"(" ( EOL+ @IDENTIFIER EOL+ ( "," EOL+  @IDENTIFIER )* )? ")"`
+}
+
+func (listImport ListImport) value() {}
+func (listImport ListImport) pos() lexer.Position {
+	return listImport.Pos
+}
+
+type SingleImport struct {
+	Pos lexer.Position
+
+	Value []string `@IDENTIFIER`
+}
+
+func (singleImport SingleImport) value() {}
+func (singleImport SingleImport) pos() lexer.Position {
+	return singleImport.Pos
 }
 
 type Uniqueness bool
 
 func (u *Uniqueness) Capture(values []string) error {
-	*u = values[0] == "-"
+	*u = values[0] == "->"
 	return nil
 }
 
 type Config struct {
 	Pos      lexer.Position
-	IsUnique *Uniqueness `@( "-" | ">" ) ">"`
+	IsUnique *Uniqueness `@( "->" | ">>" )`
 	Input    *Input      `@@`
 }
 
@@ -100,14 +125,14 @@ type Function struct {
 	Name        FunctionName  `( @IDENTIFIER | @OPERATOR )`
 	Inputs      []*Input      `( "~" @@)*`
 	Expressions []*Expression `( "{" EOL* ( @@ (";" | EOL) EOL* )* "}" )?`
-	Patterns    []*Pattern    `( ":" EOL ( @@ EOL )* EOL )?`
+	// Patterns    []*Pattern    `( ":" EOL ( @@ EOL )* EOL )?`
 }
 
 type Expression struct {
 	Pos lexer.Position
 
 	Name string      `( @IDENTIFIER | @OPERATOR )`
-	Arg  *Expression `( "(" @@ ")" ) | @@`
+	Arg  *Expression `(( "(" @@ ")" ) | @@ )*`
 }
 
 type Pattern struct {
