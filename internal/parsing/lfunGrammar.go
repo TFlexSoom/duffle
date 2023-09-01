@@ -22,7 +22,7 @@ func getLexer() (*lexer.StatefulDefinition, error) {
 		{"WHITESPACE", `[ \t]+`},
 		{"BACKTICK", "`"},
 		{"ARROW", `[>-][>]`},
-		{"PUNCTUATION", `[@(){}:;<,>]`},
+		{"PUNCTUATION", `[@(){}:;,]`},
 		{"IDENTIFIER", identifierRegexPattern},
 		{"OPERATOR", `[^@\d\w]+[^\w]*`},
 	})
@@ -37,7 +37,11 @@ func GetParser() (*participle.Parser[Module], error) {
 	return participle.Build[Module](
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
-		// participle.UseLookahead(5),
+		participle.Union[ModulePart](
+			ImportModulePart{},
+			ConfigModulePart{},
+			FunctionModulePart{},
+		),
 		participle.Union[Import](
 			ListImport{},
 			SingleImport{},
@@ -50,13 +54,27 @@ func GetParser() (*participle.Parser[Module], error) {
 type Module struct {
 	Pos lexer.Position
 
-	Imports   []*Import   `( "use" @@ EOL+ )*`
-	Configs   []*Config   `( @@ EOL+ )*`
-	Functions []*Function `( @@ EOL* )*`
+	ModuleParts []ModulePart `@@*`
+}
+
+type ModulePart interface {
+	modulePart()
+	pos() lexer.Position
+}
+
+type ImportModulePart struct {
+	Pos lexer.Position
+
+	Imports []*Import `( "use" @@ EOL+ )+`
+}
+
+func (modPart ImportModulePart) modulePart() {}
+func (modPart ImportModulePart) pos() lexer.Position {
+	return modPart.Pos
 }
 
 type Import interface {
-	value()
+	importVal()
 	pos() lexer.Position
 }
 
@@ -66,7 +84,7 @@ type ListImport struct {
 	Value []string `"(" ( EOL+ @IDENTIFIER EOL+ ( "," EOL+  @IDENTIFIER )* )? ")"`
 }
 
-func (listImport ListImport) value() {}
+func (listImport ListImport) importVal() {}
 func (listImport ListImport) pos() lexer.Position {
 	return listImport.Pos
 }
@@ -77,7 +95,7 @@ type SingleImport struct {
 	Value []string `@IDENTIFIER`
 }
 
-func (singleImport SingleImport) value() {}
+func (singleImport SingleImport) importVal() {}
 func (singleImport SingleImport) pos() lexer.Position {
 	return singleImport.Pos
 }
@@ -87,6 +105,17 @@ type Uniqueness bool
 func (u *Uniqueness) Capture(values []string) error {
 	*u = values[0] == "->"
 	return nil
+}
+
+type ConfigModulePart struct {
+	Pos lexer.Position
+
+	Configs []*Config `( @@ EOL+ )+`
+}
+
+func (modPart ConfigModulePart) modulePart() {}
+func (modPart ConfigModulePart) pos() lexer.Position {
+	return modPart.Pos
 }
 
 type Config struct {
@@ -104,6 +133,17 @@ type Input struct {
 
 type Type struct {
 	Name string `@IDENTIFIER`
+}
+
+type FunctionModulePart struct {
+	Pos lexer.Position
+
+	Functions []*Function `( @@ EOL+ )+`
+}
+
+func (modPart FunctionModulePart) modulePart() {}
+func (modPart FunctionModulePart) pos() lexer.Position {
+	return modPart.Pos
 }
 
 type FunctionName struct {
@@ -125,7 +165,7 @@ type Function struct {
 	Name        FunctionName  `( @IDENTIFIER | @OPERATOR )`
 	Inputs      []*Input      `( "~" @@)*`
 	Expressions []*Expression `( "{" EOL* ( @@ (";" | EOL) EOL* )* "}" )?`
-	// Patterns    []*Pattern    `( ":" EOL ( @@ EOL )* EOL )?`
+	Patterns    []*Pattern    `( ":" EOL ( @@ EOL )* EOL )?`
 }
 
 type Expression struct {
