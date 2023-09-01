@@ -1,8 +1,7 @@
 use sysout
 
--> string MSG
+-> word MSG
 
 @exec main {
-  MSG;
   sysout MSG
 }
