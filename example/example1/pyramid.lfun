@@ -10,7 +10,7 @@ end
 >> number ZERO
 >> number ONE
 printPyramid ->number level ->number max begin
-  endif (greaterThan level ZERO)
+  returnif (greaterThan level ZERO)
 
   printStars (subtract max level)
 

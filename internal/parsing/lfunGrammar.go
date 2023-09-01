@@ -22,7 +22,10 @@ func getLexer() (*lexer.StatefulDefinition, error) {
 		{"WHITESPACE", `[ \t]+`},
 		{"BACKTICK", "`"},
 		{"ARROW", `[>-][>]`},
-		{"PUNCTUATION", `[@(){}:;,]`},
+		{"PUNCTUATION", `[@()\[\];,]`},
+		{"BEGIN_KEYWORD", `begin`},
+		{"END_KEYWORD", `end`},
+		{"EVALS_KEYWORD", `evals`},
 		{"IDENTIFIER", identifierRegexPattern},
 		{"OPERATOR", `[^@\d\w]+[^\w]*`},
 	})
@@ -161,11 +164,11 @@ type Function struct {
 	Pos lexer.Position
 
 	Annotations []string      `( "@" @IDENTIFIER )*`
-	Type        *Type         `( @@ (?= IDENTIFIER ( "{" | ":" | "~" ) ) )?`
+	Type        *Type         `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "->" ) ) )?`
 	Name        FunctionName  `( @IDENTIFIER | @OPERATOR )`
-	Inputs      []*Input      `( "~" @@)*`
-	Expressions []*Expression `( "{" EOL* ( @@ (";" | EOL) EOL* )* "}" )?`
-	Patterns    []*Pattern    `( ":" EOL ( @@ EOL )* EOL )?`
+	Inputs      []*Input      `( "->" @@)*`
+	Expressions []*Expression `( BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD )?`
+	Patterns    []*Pattern    `( EVALS_KEYWORD EOL ( @@ EOL )* EOL )?`
 }
 
 type Expression struct {
@@ -179,6 +182,6 @@ type Pattern struct {
 	Pos lexer.Position
 
 	Name       string      `@IDENTIFIER`
-	Inputs     []*Input    `@@* "="`
+	Params     []string    `@IDENTIFIER* "="`
 	Definition *Expression `@@`
 }
