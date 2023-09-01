@@ -1,31 +1,33 @@
 use sysout
 
->> int ONE
--> int LEVELS
+>> number ONE
+-> number LEVELS
 
-@exec main {
+@exec main begin
   printPyramid (LEVELS - ONE) LEVELS 
-}
+end
 
->> int ZERO
->> int ONE
-printPyramid ~int level ~int max {
+>> number ZERO
+>> number ONE
+printPyramid ->number level ->number max begin
   endif (greaterThan level ZERO)
-  
+
   printStars (subtract max level)
-  
-  if (lvl = ONE) `printPyramid (subtract level ONE) max`
+
+  if (lvl = ONE) begin
+    printPyramid (subtract level ONE) max
+  end
 
   printStars (max - level)
-}
+end
 
 
->> char STAR
->> char NEWLINE
-printStars ~int num {
-  loop num {
+>> character STAR
+>> character NEWLINE
+printStars ->number num begin
+  loop num begin
     sysout STAR
-  }
+  end
 
   sysout NEWLINE
-}
+end

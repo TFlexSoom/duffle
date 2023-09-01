@@ -1,36 +1,35 @@
 use (
   sysout, 
-  List, 
-  String,
+  List,
 )
 
->> int ZERO
->> int ONE
->> char STAR
->> char NEWLINE
+>> number ZERO
+>> number ONE
+>> character STAR
+>> character NEWLINE
 
-@exec int main ~List[String] argv {
+@exec number main ->List[word] argv begin
   lvls := argv[0]
   printPyramid (lvls - ONE) lvls 
   return ZERO
-}
+end
 
-printPyramid ~int lvl ~int max {
-  returnif (lvl < ZERO)
+printPyramid ->number lvl ->number max begin
+  endif (lvl < ZERO)
 
   printStars (max - lvl)
 
-  if (lvl = ONE) {
+  if (lvl = ONE) begin
     printPyramid (lvl - ONE) max
-  }
+  end
 
   printStars (max - lvl)
-}
+begin
 
-printStars ~int num {
-  loop num {
+printStars ->number num begin
+  loop num begin
     sysout STAR
-  }
+  end
 
   sysout NEWLINE
-}
+end

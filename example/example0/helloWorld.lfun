@@ -2,6 +2,8 @@ use sysout
 
 -> word MSG
 
-@exec main {
-  sysout MSG
-}
+@exec main begin
+
+sysout MSG
+
+end
