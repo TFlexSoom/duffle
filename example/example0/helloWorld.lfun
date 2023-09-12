@@ -1,6 +1,6 @@
 use sysout
 
--> word MSG
+-> phrase MSG
 
 @exec main begin
 

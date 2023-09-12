@@ -1,0 +1,60 @@
+use (
+  sysout,
+  identity,
+  length,
+  tail,
+  concat,
+  List,
+  Function,
+  Student,
+)
+
+>> number ZERO
+>> number ONE
+>> number TWO
+>> List[Student] STUDENTS
+
+@exec main begin
+  sortedStudents := sortLambda STUDENTS Student.Gpa
+  sysout sortedStudents
+end
+
+sysout ->Student student begin
+  sysout student.Name
+end
+
+List[any[a]] sort ->List[any[a]] items begin
+  return (sortLambda items identity)
+end
+
+List[any[a]] sortLambda ->List[any[a]] items ->Function[any[a], decimal] key begin
+  listLen := length items
+  if (listLen <= ONE)
+    return items
+  endif
+
+  halfway := listLen / TWO
+  firstHalf := sortLambda (slice items ZERO halfway) key
+  secondHalf := sortLambda (slice items halfway listLen) key
+
+  return (mergeLambda firstHalf secondHalf key)
+end
+
+List[any[a]] mergeLambda ->List[any[a]] firstHalf ->List[any[a]] secondHalf ->Function[any[a], decimal] key begin
+  if ((length firstHalf) = ZERO)
+    return secondHalf
+  endif
+
+  if ((length secondHalf) = ZERO)
+    return firstHalf
+  endif
+
+  left := key (index ZERO firstHalf)
+  right := key (index ZERO secondHalf)
+
+  if (left <= right)
+    return concat [left] (mergeLambda (tail firstHalf) secondHalf)
+  else
+    return concat [right] (mergeLambda firstHalf (tail secondHalf))
+  endif
+end

@@ -8,28 +8,27 @@ use (
 >> character STAR
 >> character NEWLINE
 
-@exec number main ->List[word] argv begin
+@exec number main ->List[phrase] argv begin
   lvls := argv[0]
   printPyramid (lvls - ONE) lvls 
   return ZERO
 end
 
 printPyramid ->number lvl ->number max begin
-  endif (lvl < ZERO)
+  if (lvl < ZERO)
+    return
+  endif
 
   printStars (max - lvl)
 
-  if (lvl = ONE) begin
+  if (lvl = ONE)
     printPyramid (lvl - ONE) max
-  end
+  endif
 
   printStars (max - lvl)
 begin
 
 printStars ->number num begin
-  loop num begin
-    sysout STAR
-  end
-
+  loop num `sysout STAR`
   sysout NEWLINE
 end
