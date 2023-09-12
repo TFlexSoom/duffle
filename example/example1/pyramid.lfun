@@ -4,13 +4,13 @@ use sysout
 -> number LEVELS
 
 @exec main begin
-  printPyramid (LEVELS - ONE) LEVELS 
+  printPyramid (LEVELS - ONE) LEVELS
 end
 
 >> number ZERO
 >> number ONE
 printPyramid ->number level ->number max begin
-  if (level > ZERO)
+  if (level > ZERO) then
     return
   endif
 
@@ -19,6 +19,7 @@ printPyramid ->number level ->number max begin
   if (lvl = ONE) `printPyramid (level - ONE) max`
 
   printStars (max - level)
+  
 end
 
 

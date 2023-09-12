@@ -15,13 +15,11 @@ use (
 end
 
 printPyramid ->number lvl ->number max begin
-  if (lvl < ZERO)
-    return
-  endif
+  if (lvl < ZERO) return
 
   printStars (max - lvl)
 
-  if (lvl = ONE)
+  if (lvl = ONE) then
     printPyramid (lvl - ONE) max
   endif
 

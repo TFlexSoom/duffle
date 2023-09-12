@@ -29,7 +29,7 @@ end
 
 List[any[a]] sortLambda ->List[any[a]] items ->Function[any[a], decimal] key begin
   listLen := length items
-  if (listLen <= ONE)
+  if (listLen <= ONE) then
     return items
   endif
 
@@ -41,20 +41,20 @@ List[any[a]] sortLambda ->List[any[a]] items ->Function[any[a], decimal] key beg
 end
 
 List[any[a]] mergeLambda ->List[any[a]] firstHalf ->List[any[a]] secondHalf ->Function[any[a], decimal] key begin
-  if ((length firstHalf) = ZERO)
+  if ((length firstHalf) = ZERO) then
     return secondHalf
   endif
 
-  if ((length secondHalf) = ZERO)
+  if ((length secondHalf) = ZERO) then
     return firstHalf
   endif
 
   left := key (index ZERO firstHalf)
   right := key (index ZERO secondHalf)
 
-  if (left <= right)
+  if (left <= right) then
     return concat [left] (mergeLambda (tail firstHalf) secondHalf)
-  else
+  else then
     return concat [right] (mergeLambda firstHalf (tail secondHalf))
   endif
 end
