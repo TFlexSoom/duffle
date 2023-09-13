@@ -12,7 +12,7 @@ import (
 )
 
 // // Lexer
-const identifierRegexPattern = `[a-zA-Z]+[a-zA-Z\d]+\w*`
+const identifierRegexPattern = `[a-zA-Z]+[a-zA-Z\d]+`
 
 var identifierRegex = regexp.MustCompile(identifierRegexPattern)
 
@@ -29,7 +29,7 @@ func getLexer() (*lexer.StatefulDefinition, error) {
 			lexer.Include("Spacing"),
 			{Name: "USE_KEYWORD", Pattern: `use`, Action: nil},
 			{Name: "ARROW", Pattern: `[>-][>]`, Action: nil},
-			{Name: "TYPE_PUNCTATION", Pattern: `[@\[\],]`, Action: nil},
+			{Name: "TYPE_PUNCTATION", Pattern: `[@\[\](),]`, Action: nil},
 			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Expression")},
 			lexer.Include("Identity"),
 		},
@@ -162,7 +162,8 @@ type Input struct {
 }
 
 type Type struct {
-	Name string `@IDENTIFIER`
+	Name     string    `@IDENTIFIER`
+	Generics []*string `("[" (@IDENTIFIER ",")* @IDENTIFIER "]")?`
 }
 
 type FunctionModulePart struct {

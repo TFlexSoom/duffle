@@ -1,7 +1,5 @@
-use (
-  sysout, 
-  List,
-)
+use sysout
+use List
 
 >> number ZERO
 >> number ONE
@@ -9,7 +7,6 @@ use (
 >> character NEWLINE
 
 @exec number main ->List[phrase] argv begin
-  lvls := argv[0]
   printPyramid (lvls - ONE) lvls 
   return ZERO
 end
