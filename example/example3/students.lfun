@@ -1,12 +1,12 @@
 use (
-  sysout,
-  identity,
-  length,
-  tail,
-  concat,
-  List,
-  Function,
-  Student,
+  sysout
+  identity
+  length
+  tail
+  concat
+  List
+  Function
+  Student
 )
 
 >> number ZERO
