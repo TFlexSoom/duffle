@@ -162,8 +162,8 @@ type Input struct {
 }
 
 type Type struct {
-	Name     string    `@IDENTIFIER`
-	Generics []*string `("[" (@IDENTIFIER ",")* @IDENTIFIER "]")?`
+	Name     string   `@IDENTIFIER`
+	Generics []string `("[" (@IDENTIFIER ",")* @IDENTIFIER "]")?`
 }
 
 type FunctionModulePart struct {
