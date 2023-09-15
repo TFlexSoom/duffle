@@ -1,4 +1,5 @@
 use sysout
+use loop
 use List
 
 >> number ZERO
@@ -12,7 +13,7 @@ use List
 end
 
 printPyramid ->number lvl ->number max begin
-  if (lvl < ZERO) return
+  ifthen (lvl < ZERO) return
 
   printStars (max - lvl)
 
@@ -21,7 +22,7 @@ printPyramid ->number lvl ->number max begin
   endif
 
   printStars (max - lvl)
-begin
+end
 
 printStars ->number num begin
   loop num `sysout STAR`

@@ -1,4 +1,5 @@
 use sysout
+use loop
 
 >> number ONE
 -> number LEVELS
@@ -10,13 +11,13 @@ end
 >> number ZERO
 >> number ONE
 printPyramid ->number level ->number max begin
-  if (level > ZERO) then
-    return
-  endif
+  ifthen (level > ZERO) return
 
   printStars (max - level)
 
-  if (lvl = ONE) `printPyramid (level - ONE) max`
+  if (lvl = ONE) then
+    printPyramid (level - ONE) max
+  endif
 
   printStars (max - level)
   

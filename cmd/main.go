@@ -14,7 +14,7 @@ import (
 func main() {
 	log.Println("Beginning Parsing!")
 
-	const file = "./example/example2/pyramidArgs.lfun"
+	const file = "./example/example3/students.lfun"
 	r, err := os.Open(file)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)

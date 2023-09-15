@@ -25,29 +25,44 @@ func getLexer() (*lexer.StatefulDefinition, error) {
 		"Identity": {
 			{Name: "IDENTIFIER", Pattern: identifierRegexPattern, Action: nil},
 		},
+		"Operator": {
+			{Name: "OPERATOR", Pattern: `[^\d\w][^\w]*`, Action: nil},
+		},
 		"Root": {
 			lexer.Include("Spacing"),
 			{Name: "USE_KEYWORD", Pattern: `use`, Action: nil},
 			{Name: "ARROW", Pattern: `[>-][>]`, Action: nil},
 			{Name: "TYPE_PUNCTATION", Pattern: `[@\[\](),]`, Action: nil},
-			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Expression")},
+			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Instruction")},
+			{Name: "EVALS_KEYWORD", Pattern: `evals`, Action: lexer.Push("Pattern")},
 			lexer.Include("Identity"),
 		},
 		"Expression": {
 			lexer.Include("Spacing"),
 			{Name: "BACKTICK", Pattern: "`", Action: nil},
 			{Name: "EXPR_PUNCTATION", Pattern: `[();]`, Action: nil},
+		},
+		"Instruction": {
+			lexer.Include("Spacing"),
+			lexer.Include("Expression"),
+			{Name: "INLINE_IF_KEYWORD", Pattern: `ifthen`, Action: nil},
 			{Name: "IF_KEYWORD", Pattern: `if`, Action: nil},
 			{Name: "THEN_KEYWORD", Pattern: `then`, Action: lexer.Push("Condition")},
-			{Name: "EVALS_KEYWORD", Pattern: `evals`, Action: nil},
 			{Name: "END_KEYWORD", Pattern: `end`, Action: lexer.Pop()},
 			lexer.Include("Identity"),
-			{Name: "OPERATOR", Pattern: `[^@\d\w][^\w]*`, Action: nil},
+			lexer.Include("Operator"),
 		},
 		"Condition": {
 			lexer.Include("Spacing"),
 			{Name: "END_IF_KEYWORD", Pattern: `endif`, Action: lexer.Pop()},
+			lexer.Include("Instruction"),
+		},
+		"Pattern": {
+			{Name: "END_EVAL", Pattern: `((\r)?\n)[2]`, Action: lexer.Pop()},
+			lexer.Include("Spacing"),
 			lexer.Include("Expression"),
+			lexer.Include("Identity"),
+			lexer.Include("Operator"),
 		},
 	})
 }
@@ -61,6 +76,7 @@ func GetParser() (*participle.Parser[Module], error) {
 	return participle.Build[Module](
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
+		participle.UseLookahead(2),
 		participle.Union[ModulePart](
 			ImportModulePart{},
 			ConfigModulePart{},
@@ -70,15 +86,20 @@ func GetParser() (*participle.Parser[Module], error) {
 			ListImport{},
 			SingleImport{},
 		),
-		participle.Union[RootExpression](
-			ConditionalExpression{},
+		participle.Union[Instruction](
+			BlockConditionalExpression{},
+			InlineConditionalExpression{},
 			ParentheticalExpression{},
-			OperatorExpression{},
 			ReferenceExpression{},
 		),
-		participle.Union[ContainedExpression](
+		participle.Union[Parenthetical](
+			CaptureExpression{},
 			ParentheticalExpression{},
-			OperatorExpression{},
+			ReferenceExpression{},
+		),
+		participle.Union[Operand](
+			CaptureExpression{},
+			ParentheticalExpression{},
 			ReferenceExpression{},
 		),
 	)
@@ -196,82 +217,102 @@ func (fname *FunctionName) Capture(values []string) error {
 type Function struct {
 	Pos lexer.Position
 
-	Annotations []string         `( "@" @IDENTIFIER )*`
-	Type        Type             `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "->" ) ) )?`
-	Name        FunctionName     `( @IDENTIFIER | @OPERATOR )`
-	Inputs      []Input          `( "->" @@)*`
-	Expressions []RootExpression `( BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD )`
-	Patterns    []Pattern        `| ( EVALS_KEYWORD EOL ( @@ EOL )* EOL )`
+	Annotations  []string          `( "@" @IDENTIFIER )*`
+	Type         Type              `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "->" ) ) )?`
+	Name         FunctionName      `( @IDENTIFIER | @OPERATOR )`
+	Inputs       []Input           `( "->" @@)*`
+	Instructions []RootInstruction `( BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD )`
+	Patterns     []Pattern         `| ( EVALS_KEYWORD EOL ( @@ EOL )* END_EVAL )`
 }
 
-type RootExpression interface {
-	root()
+type Instruction interface {
+	instruction()
 	pos() lexer.Position
 }
 
-type ContainedExpression interface {
-	contained()
+type Parenthetical interface {
+	parenthesis()
 	pos() lexer.Position
 }
 
-type ConditionalExpression struct {
+type Operand interface {
+	operand()
+	pos() lexer.Position
+}
+
+type RootInstruction struct {
 	Pos lexer.Position
 
-	Condition ContainedExpression `IF_KEYWORD "(" @@ ")"`
-	Execution RootExpression      `( (THEN_KEYWORD EOL @@ EOL+ END_IF_KEYWORD) | @@  )`
+	Resolution Instruction `@@`
+	Ammendment Ammendment  `@@*`
 }
 
-func (expression ConditionalExpression) root() {}
-func (expression ConditionalExpression) pos() lexer.Position {
+type Ammendment struct {
+	Pos lexer.Position
+
+	Op    string  `@OPERATOR`
+	Value Operand `@@`
+}
+
+type BlockConditionalExpression struct {
+	Pos lexer.Position
+
+	Condition Parenthetical     `IF_KEYWORD "(" @@ ")" THEN_KEYWORD EOL+`
+	Execution []RootInstruction `(@@ EOL+)* END_IF_KEYWORD`
+}
+
+func (expression BlockConditionalExpression) instruction() {}
+func (expression BlockConditionalExpression) pos() lexer.Position {
+	return expression.Pos
+}
+
+type InlineConditionalExpression struct {
+	Pos lexer.Position
+
+	Condition Parenthetical `INLINE_IF_KEYWORD "(" @@ ")"`
+	Execution Operand       `@@`
+}
+
+func (expression InlineConditionalExpression) instruction() {}
+func (expression InlineConditionalExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
 type ParentheticalExpression struct {
 	Pos lexer.Position
 
-	Instance ContainedExpression `"(" @@ ")"`
+	Instance Parenthetical `"(" @@ ")"`
 }
 
-func (expression ParentheticalExpression) root()      {}
-func (expression ParentheticalExpression) contained() {}
+func (expression ParentheticalExpression) instruction() {}
+func (expression ParentheticalExpression) parenthesis() {}
+func (expression ParentheticalExpression) operand()     {}
 func (expression ParentheticalExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
-type CallableExpression struct {
+type CaptureExpression struct {
 	Pos lexer.Position
 
-	Instance ContainedExpression `BACKTICK @@ BACKTICK`
+	Instance Parenthetical `BACKTICK @@ BACKTICK`
 }
 
-func (expression CallableExpression) contained() {}
-func (expression CallableExpression) pos() lexer.Position {
-	return expression.Pos
-}
-
-type OperatorExpression struct {
-	Pos lexer.Position
-
-	LInstance ContainedExpression `@@`
-	Name      string              `@OPERATOR`
-	RInstance ContainedExpression `@@`
-}
-
-func (expression OperatorExpression) root()      {}
-func (expression OperatorExpression) contained() {}
-func (expression OperatorExpression) pos() lexer.Position {
+func (expression CaptureExpression) parenthesis() {}
+func (expression CaptureExpression) operand()     {}
+func (expression CaptureExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
 type ReferenceExpression struct {
 	Pos lexer.Position
 
-	Name string              `@IDENTIFIER`
-	Args ContainedExpression `@@*`
+	Name string    `@IDENTIFIER`
+	Args []Operand `@@*`
 }
 
-func (expression ReferenceExpression) root()      {}
-func (expression ReferenceExpression) contained() {}
+func (expression ReferenceExpression) instruction() {}
+func (expression ReferenceExpression) parenthesis() {}
+func (expression ReferenceExpression) operand()     {}
 func (expression ReferenceExpression) pos() lexer.Position {
 	return expression.Pos
 }
@@ -279,7 +320,7 @@ func (expression ReferenceExpression) pos() lexer.Position {
 type Pattern struct {
 	Pos lexer.Position
 
-	Name       string         `@IDENTIFIER`
-	Params     []string       `@IDENTIFIER* "="`
-	Definition RootExpression `@@`
+	Name       string          `@IDENTIFIER`
+	Params     []string        `@IDENTIFIER* ASSIGNMENT_OPERATOR`
+	Definition RootInstruction `@@`
 }
