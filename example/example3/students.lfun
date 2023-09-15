@@ -15,7 +15,7 @@ use (
 >> List[Student] STUDENTS
 
 @exec main begin
-  sortedStudents := sortLambda STUDENTS `Student Gpa`
+  sortedStudents := sortLambda STUDENTS (Student . Gpa)
   sysout sortedStudents
 end
 
@@ -53,8 +53,10 @@ List[any[a]] mergeLambda ->List[any[a]] firstHalf ->List[any[a]] secondHalf ->Fu
   right := key (index ZERO secondHalf)
 
   if (left <= right) then
-    return (concat [left] (mergeLambda (tail firstHalf) secondHalf))
-  else then
-    return (concat [right] (mergeLambda firstHalf (tail secondHalf)))
+    return (concat (list left) (mergeLambda (tail firstHalf) secondHalf))
+
+  else
+    return (concat (list right) (mergeLambda firstHalf (tail secondHalf)))
+
   endif
 end
