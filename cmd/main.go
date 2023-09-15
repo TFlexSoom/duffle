@@ -20,7 +20,7 @@ func main() {
 		log.Fatalf("Error: %v\n", err)
 	}
 
-	parser, err := parsing.GetParser()
+	parser, err := parsing.GetLFParser()
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}

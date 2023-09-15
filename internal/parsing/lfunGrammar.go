@@ -16,7 +16,7 @@ const identifierRegexPattern = `[a-zA-Z][a-zA-Z\d]*`
 
 var identifierRegex = regexp.MustCompile(identifierRegexPattern)
 
-func getLexer() (*lexer.StatefulDefinition, error) {
+func getLFunLexer() (*lexer.StatefulDefinition, error) {
 	return lexer.New(lexer.Rules{
 		"Spacing": {
 			{Name: "EOL", Pattern: `(\r)?\n`, Action: nil},
@@ -69,8 +69,8 @@ func getLexer() (*lexer.StatefulDefinition, error) {
 	})
 }
 
-func GetParser() (*participle.Parser[Module], error) {
-	var lexer, err = getLexer()
+func GetLFParser() (*participle.Parser[Module], error) {
+	var lexer, err = getLFunLexer()
 	if err != nil {
 		return nil, err
 	}
