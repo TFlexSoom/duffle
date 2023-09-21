@@ -5,10 +5,12 @@
 package parsing
 
 import (
+	"io"
 	"regexp"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/tflexsoom/deflemma/internal/types"
 )
 
 // // Lexer
@@ -69,13 +71,24 @@ func getLFunLexer() (*lexer.StatefulDefinition, error) {
 	})
 }
 
-func GetLFParser() (*participle.Parser[Module], error) {
+type ModuleParser struct {
+	Parser *participle.Parser[Module]
+}
+
+func (modParser *ModuleParser) ParseSourceFile(
+	fileName string,
+	reader io.Reader,
+) (interface{}, error) {
+	return modParser.Parser.Parse(fileName, reader)
+}
+
+func GetLFunParser() (types.SourceFileParser, error) {
 	var lexer, err = getLFunLexer()
 	if err != nil {
 		return nil, err
 	}
 
-	return participle.Build[Module](
+	parser, err := participle.Build[Module](
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
 		participle.UseLookahead(1),
@@ -102,6 +115,16 @@ func GetLFParser() (*participle.Parser[Module], error) {
 			OperatorExpression{},
 		),
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := ModuleParser{
+		Parser: parser,
+	}
+
+	return &wrapped, nil
 }
 
 //// Grammar

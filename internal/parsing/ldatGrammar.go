@@ -1,12 +1,15 @@
 // author: Tristan Hilbert
 // date: 8/29/2023
-// filename: lfunGrammar.go
-// desc: Parsing Grammar to Build AST for lfun files
+// filename: ldatGrammar.go
+// desc: Parsing Grammar to Build AST for ldat files
 package parsing
 
 import (
+	"io"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/tflexsoom/deflemma/internal/types"
 )
 
 // // Lexer
@@ -26,17 +29,38 @@ func getLDatLexer() (*lexer.StatefulDefinition, error) {
 	})
 }
 
-func GetLDatParser() (*participle.Parser[Configuration], error) {
+type ConfigurationParser struct {
+	Parser *participle.Parser[Configuration]
+}
+
+func (configParser *ConfigurationParser) ParseSourceFile(
+	fileName string,
+	reader io.Reader,
+) (interface{}, error) {
+	return configParser.Parser.Parse(fileName, reader)
+}
+
+func GetLDatParser() (types.SourceFileParser, error) {
 	var lexer, err = getLDatLexer()
 	if err != nil {
 		return nil, err
 	}
 
-	return participle.Build[Configuration](
+	parser, err := participle.Build[Configuration](
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
 		participle.UseLookahead(1),
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := ConfigurationParser{
+		Parser: parser,
+	}
+
+	return &wrapped, nil
 }
 
 //// Grammar
