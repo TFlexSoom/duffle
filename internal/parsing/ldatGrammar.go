@@ -6,6 +6,7 @@ package parsing
 
 import (
 	"io"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -16,7 +17,8 @@ import (
 func getLDatLexer() (*lexer.StatefulDefinition, error) {
 	return lexer.NewSimple([]lexer.SimpleRule{
 		{Name: "WHITESPACE", Pattern: `[ \t]+`},
-		{Name: "EOL", Pattern: `(\r)?\n`},
+		{Name: "EOL", Pattern: `\r?\n`},
+		{Name: "ASSIGNMENT_OP", Pattern: `=`},
 		{Name: "ARRAY_START", Pattern: `\[`},
 		{Name: "ARRAY_END", Pattern: `\]`},
 		{Name: "OBJECT_START", Pattern: `\(`},
@@ -25,7 +27,9 @@ func getLDatLexer() (*lexer.StatefulDefinition, error) {
 		{Name: "DECIMAL", Pattern: `[\d]+\.[\d]*`},
 		{Name: "INTEGER", Pattern: `[\d]+`},
 		{Name: "QUOTED_VAL", Pattern: `"[~"]*"`},
+		{Name: "BOOL_VALUE", Pattern: `true|false`},
 		{Name: "IDENTIFIER", Pattern: `[a-zA-Z][a-zA-Z\d]*`},
+		{Name: "TEXT", Pattern: `[^\w\r\n]+`},
 	})
 }
 
@@ -48,8 +52,15 @@ func GetLDatParser() (types.SourceFileParser, error) {
 
 	parser, err := participle.Build[Configuration](
 		participle.Lexer(lexer),
-		participle.Elide("WHITESPACE"),
 		participle.UseLookahead(1),
+		participle.Union[AssignmentValue](
+			List{},
+			Struct{},
+			Bool{},
+			Float{},
+			Int{},
+			String{},
+		),
 	)
 
 	if err != nil {
@@ -68,14 +79,14 @@ func GetLDatParser() (types.SourceFileParser, error) {
 type Configuration struct {
 	Pos lexer.Position
 
-	Assignments []Assignment `@@*`
+	Assignments []Assignment `(@@ EOL*)*`
 }
 
 type Assignment struct {
 	Pos lexer.Position
 
-	Name  string          `@IDENTITY`
-	Value AssignmentValue `= @@`
+	Name  string          `@IDENTIFIER`
+	Value AssignmentValue `WHITESPACE* "=" WHITESPACE* @@`
 }
 
 type AssignmentValue interface {
@@ -83,9 +94,26 @@ type AssignmentValue interface {
 	pos() lexer.Position
 }
 
+type Boolean bool
+
+func (boolean *Boolean) Capture(values []string) error {
+	*boolean = values[0] == "true"
+	return nil
+}
+
+type Bool struct {
+	Pos   lexer.Position
+	Value Boolean `@( "true" | "false" ) WHITESPACE* EOL`
+}
+
+func (b Bool) value() {}
+func (b Bool) pos() lexer.Position {
+	return b.Pos
+}
+
 type Float struct {
 	Pos   lexer.Position
-	Value float64 `@DECIMAL`
+	Value float64 `@DECIMAL WHITESPACE* EOL`
 }
 
 func (f Float) value() {}
@@ -95,7 +123,7 @@ func (f Float) pos() lexer.Position {
 
 type Int struct {
 	Pos   lexer.Position
-	Value int `@INTEGER`
+	Value int `@INTEGER EOL`
 }
 
 func (f Int) value() {}
@@ -103,9 +131,20 @@ func (f Int) pos() lexer.Position {
 	return f.Pos
 }
 
+type StringValue string
+
+func (stringVal *StringValue) Capture(values []string) error {
+	if stringVal == nil {
+		*stringVal = ""
+	}
+
+	*stringVal += StringValue(strings.Join(values, ""))
+	return nil
+}
+
 type String struct {
 	Pos   lexer.Position
-	Value string `@IDENTITY | @QUOTED_VAL`
+	Value StringValue `(@IDENTIFIER | @QUOTED_VAL | @TEXT) (@WHITESPACE* (@IDENTIFIER | @TEXT))* WHITESPACE* EOL`
 }
 
 func (f String) value() {}
@@ -115,7 +154,7 @@ func (f String) pos() lexer.Position {
 
 type List struct {
 	Pos    lexer.Position
-	Values []AssignmentValue `"[" (@@ ",")* @@? "]"`
+	Values []AssignmentValue `"[" WHITESPACE* EOL? (WHITESPACE* @@ "," EOL?)* WHITESPACE* @@? WHITESPACE* EOL?"]" WHITESPACE* EOL`
 }
 
 func (l List) value() {}
@@ -125,7 +164,7 @@ func (l List) pos() lexer.Position {
 
 type Struct struct {
 	Pos    lexer.Position
-	Fields []AssignmentValue `"(" (@@ ",")* @@? ")"`
+	Fields []AssignmentValue `"(" WHITESPACE* EOL? (WHITESPACE* @@ "," EOL?)* WHITESPACE* @@? WHITESPACE* EOL? ")" WHITESPACE* EOL`
 }
 
 func (s Struct) value() {}
