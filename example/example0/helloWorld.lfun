@@ -1,6 +1,6 @@
 use sysout
 
--> phrase MSG
+fact MSG "Hello World"
 
 @exec main begin
 

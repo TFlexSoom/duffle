@@ -1,0 +1,25 @@
+use sysout
+
+fact USE_PREFIX false
+fact MESSAGE "Hello World"
+fact PREFIX "~"
+
+@exec main begin
+
+  sysout getMessage
+
+end
+
+text getMessage begin
+  result := ( 
+    @ begin 
+      if ( USE_PREFIX ) then
+        return (concat PREFIX MESSAGE)
+      endif
+
+      return MESSAGE
+    end 
+  )
+
+  return result
+end

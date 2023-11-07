@@ -1,18 +1,19 @@
 use sysout
 use loop
-use List
+use text2Number
 
->> number ZERO
->> number ONE
->> character STAR
->> character NEWLINE
+fact ZERO 0
+fact ONE 1
+fact STAR char('*')
+fact NEWLINE char('\n')
 
-@exec number main ->List[phrase] argv begin
+@exec number main <List[text] args> begin
+  lvls := text2Number (listGet 0 args)
   printPyramid (lvls - ONE) lvls 
   return ZERO
 end
 
-printPyramid ->number lvl ->number max begin
+printPyramid <number lvl> <number max> begin
   ifthen (lvl < ZERO) return
 
   printStars (max - lvl)
@@ -24,7 +25,7 @@ printPyramid ->number lvl ->number max begin
   printStars (max - lvl)
 end
 
-printStars ->number num begin
+printStars <number num> begin
   loop num `sysout STAR`
   sysout NEWLINE
 end
