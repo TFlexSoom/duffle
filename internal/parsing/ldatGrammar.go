@@ -2,6 +2,7 @@
 // date: 8/29/2023
 // filename: ldatGrammar.go
 // desc: Parsing Grammar to Build AST for ldat files
+// notes: Might trade this out for a TOML parser instead!
 package parsing
 
 import (

@@ -20,9 +20,8 @@ type ParserOptions struct {
 }
 
 var parsers = map[types.SourceFileType](func() (types.SourceFileParser, error)){
-	types.FunctionFile:  parsing.GetLFunParser,
-	types.DataFile:      parsing.GetLDatParser,
-	types.StructureFile: parsing.GetLMemParser,
+	types.FunctionFile: parsing.GetLFunParser,
+	types.DataFile:     parsing.GetLDatParser,
 }
 
 func ParseOnly(options ParserOptions) error {

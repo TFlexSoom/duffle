@@ -33,8 +33,9 @@ func getLFunLexer() (*lexer.StatefulDefinition, error) {
 		"Root": {
 			lexer.Include("Spacing"),
 			{Name: "USE_KEYWORD", Pattern: `use`, Action: nil},
-			{Name: "ARROW", Pattern: `[>-][>]`, Action: nil},
-			{Name: "TYPE_PUNCTATION", Pattern: `[@\[\](),]`, Action: nil},
+			{Name: "FACT_KEYWORD", Pattern: `fact`, Action: nil},
+			{Name: "THEORY_KEYWORD", Pattern: `theory`, Action: nil},
+			{Name: "TYPE_PUNCTATION", Pattern: `[@\[\](),<>]`, Action: nil},
 			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Instruction")},
 			{Name: "EVALS_KEYWORD", Pattern: `evals`, Action: lexer.Push("Pattern")},
 			lexer.Include("Identity"),
@@ -181,7 +182,7 @@ func (singleImport SingleImport) pos() lexer.Position {
 type Uniqueness bool
 
 func (u *Uniqueness) Capture(values []string) error {
-	*u = values[0] == "->"
+	*u = values[0] == "theory"
 	return nil
 }
 
@@ -198,14 +199,14 @@ func (modPart ConfigModulePart) pos() lexer.Position {
 
 type Config struct {
 	Pos      lexer.Position
-	IsUnique Uniqueness `@( "->" | ">>" )`
-	Input    Input      `@@`
+	IsUnique Uniqueness        `@( THEORY_KEYWORD | FACT_KEYWORD )`
+	Input    Input             `@@`
+	Value    InlineInstruction `@@`
 }
 
 type Input struct {
 	Pos lexer.Position
 
-	Type Type   `@@`
 	Name string `@IDENTIFIER`
 }
 
@@ -242,7 +243,7 @@ type Function struct {
 	Annotations  []string           `( "@" @IDENTIFIER )*`
 	Type         Type               `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "->" ) ) )?`
 	Name         FunctionName       `( @IDENTIFIER | @OPERATOR )`
-	Inputs       []Input            `( "->" @@)*`
+	Inputs       []Input            `( "<" @@ ">")*`
 	Instructions []BlockInstruction `( BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD )`
 	Patterns     []Pattern          `| ( EVALS_KEYWORD EOL ( @@ EOL )* END_EVAL )`
 }
