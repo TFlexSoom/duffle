@@ -24,8 +24,8 @@ printPyramid <number level> <number max> begin
 end
 
 
-fact STAR char '*'
-fact NEWLINE char '\n'
+fact STAR ( char '*' )
+fact NEWLINE ( char '\n' )
 printStars <number num> begin
   loop num `sysout STAR`
   sysout NEWLINE

@@ -1,26 +1,27 @@
 // author: Tristan Hilbert
 // date: 8/29/2023
-// filename: lfunGrammar.go
-// desc: Parsing Grammar to Build AST for lfun files
-package parsing
+// filename: dflgrammar.go
+// desc: Parsing Grammar to Build AST for dfl files
+package dflgrammar
 
 import (
 	"errors"
 	"io"
 	"regexp"
-	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/tflexsoom/deflemma/internal/types"
+
+	"github.com/tflexsoom/deflemma/internal/parsing/util"
 )
 
 // // Lexer
-const identifierRegexPattern = `[a-zA-Z][a-zA-Z\d]*`
+const identifierRegexPattern = `[a-zA-Z][a-zA-Z\d_]*`
 
 var identifierRegex = regexp.MustCompile(identifierRegexPattern)
 
-func getLFunLexer() (*lexer.StatefulDefinition, error) {
+func getDflLexer() (*lexer.StatefulDefinition, error) {
 	return lexer.New(lexer.Rules{
 		"Spacing": {
 			{Name: "EOL", Pattern: `(\r)?\n`, Action: nil},
@@ -33,14 +34,13 @@ func getLFunLexer() (*lexer.StatefulDefinition, error) {
 			{Name: "OPERATOR", Pattern: `[^\d\w][^\w]*`, Action: nil},
 		},
 		"Literal": {
-			{Name: "DECIMAL", Pattern: `[\d]+\.[\d]*`, Action: nil},
-			{Name: "INTEGER", Pattern: `[\d]+`, Action: nil},
-			{Name: "SINGLE_QUOTED_VAL", Pattern: `'[~']*'`, Action: nil}, // Escape quotes?
-			{Name: "QUOTED_VAL", Pattern: `"[~"]*"`, Action: nil},        // Escape quotes?
-			{Name: "BOOL_VALUE", Pattern: `true|false`, Action: nil},
+			{Name: "BOOLEAN", Pattern: util.BooleanRegex, Action: nil},
+			{Name: util.DecimalTagName, Pattern: util.DecimalRegex, Action: nil},
+			{Name: util.IntTagName, Pattern: util.IntRegex, Action: nil},
+			{Name: "SINGLE_QUOTED_VAL", Pattern: `'[^']*'`, Action: nil},             // Escape quotes?
+			{Name: util.QuotedValTagName, Pattern: util.QuotedValRegex, Action: nil}, // Escape quotes?
 		},
 		"Expression": {
-			lexer.Include("Spacing"),
 			{Name: "BACKTICK", Pattern: "`", Action: nil},
 			{Name: "EXPR_PUNCTATION", Pattern: `[();]`, Action: nil},
 			{Name: "ANNOTATION_SYMBOL", Pattern: `[@]`, Action: nil},
@@ -95,8 +95,8 @@ func (modParser *ModuleParser) ParseSourceFile(
 	return modParser.Parser.Parse(fileName, reader)
 }
 
-func GetLFunParser() (types.SourceFileParser, error) {
-	var lexer, err = getLFunLexer()
+func GetDflParser() (types.SourceFileParser, error) {
+	var lexer, err = getDflLexer()
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func GetLFunParser() (types.SourceFileParser, error) {
 	parser, err := participle.Build[Module](
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
-		participle.UseLookahead(1),
+		participle.UseLookahead(2),
 		participle.Union[ModulePart](
 			ImportModulePart{},
 			ConfigModulePart{},
@@ -115,10 +115,10 @@ func GetLFunParser() (types.SourceFileParser, error) {
 			SingleImport{},
 		),
 		participle.Union[ConfigInstruction](
-			CaptureExpression{},
-			ParentheticalExpression{},
-			ReferenceExpression{},
-			OperatorExpression{},
+			ConfCaptureExpression{},
+			ConfParentheticalExpression{},
+			ConfReferenceExpression{},
+			ConfOperatorExpression{},
 			LiteralExpression{},
 		),
 		participle.Union[BlockInstruction](
@@ -134,12 +134,12 @@ func GetLFunParser() (types.SourceFileParser, error) {
 			ReferenceExpression{},
 			OperatorExpression{},
 		),
-		participle.Union[LiteralValue](
-			ExprBool{},
-			ExprFloat{},
-			ExprInt{},
-			ExprString{},
-			ExprChar{},
+		participle.Union[util.Value](
+			util.BoolGrammar{},
+			util.FloatGrammar{},
+			util.IntGrammar{},
+			util.StringGrammar{},
+			CharGrammar{},
 		),
 	)
 
@@ -230,11 +230,6 @@ type Config struct {
 	Value    ConfigInstruction `@@`
 }
 
-type ConfigInstruction interface {
-	config()
-	pos() lexer.Position
-}
-
 type FunctionModulePart struct {
 	Pos lexer.Position
 
@@ -273,7 +268,7 @@ type Function struct {
 	Pos lexer.Position
 
 	Annotations  []string           `( "@" @IDENTIFIER )*`
-	Type         Type               `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "->" ) ) )?`
+	Type         Type               `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "<" ) ) )?`
 	Name         FunctionName       `( @IDENTIFIER | @OPERATOR )`
 	Inputs       []Input            `( "<" @@ ">")*`
 	Instructions []BlockInstruction `( BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD )`
@@ -287,6 +282,11 @@ type BlockInstruction interface {
 
 type InlineInstruction interface {
 	inline()
+	pos() lexer.Position
+}
+
+type ConfigInstruction interface {
+	config()
 	pos() lexer.Position
 }
 
@@ -332,8 +332,19 @@ type ParentheticalExpression struct {
 
 func (expression ParentheticalExpression) block()  {}
 func (expression ParentheticalExpression) inline() {}
-func (expression ParentheticalExpression) config() {}
 func (expression ParentheticalExpression) pos() lexer.Position {
+	return expression.Pos
+}
+
+type ConfParentheticalExpression struct {
+	Pos lexer.Position
+
+	Execution     ConfigInstruction `"(" @@ ")"`
+	NextExecution ConfigInstruction `@@?`
+}
+
+func (expression ConfParentheticalExpression) config() {}
+func (expression ConfParentheticalExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
@@ -346,8 +357,19 @@ type CaptureExpression struct {
 
 func (expression CaptureExpression) block()  {}
 func (expression CaptureExpression) inline() {}
-func (expression CaptureExpression) config() {}
 func (expression CaptureExpression) pos() lexer.Position {
+	return expression.Pos
+}
+
+type ConfCaptureExpression struct {
+	Pos lexer.Position
+
+	Execution     ConfigInstruction `BACKTICK @@ BACKTICK`
+	NextExecution ConfigInstruction `@@?`
+}
+
+func (expression ConfCaptureExpression) config() {}
+func (expression ConfCaptureExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
@@ -360,8 +382,19 @@ type ReferenceExpression struct {
 
 func (expression ReferenceExpression) block()  {}
 func (expression ReferenceExpression) inline() {}
-func (expression ReferenceExpression) config() {}
 func (expression ReferenceExpression) pos() lexer.Position {
+	return expression.Pos
+}
+
+type ConfReferenceExpression struct {
+	Pos lexer.Position
+
+	ReferenceGroup []string          `@IDENTIFIER+`
+	NextExecution  ConfigInstruction `@@?`
+}
+
+func (expression ConfReferenceExpression) config() {}
+func (expression ConfReferenceExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
@@ -373,15 +406,26 @@ type OperatorExpression struct {
 }
 
 func (expression OperatorExpression) inline() {}
-func (expression OperatorExpression) config() {}
 func (expression OperatorExpression) pos() lexer.Position {
+	return expression.Pos
+}
+
+type ConfOperatorExpression struct {
+	Pos lexer.Position
+
+	ReferenceGroup []string          `@OPERATOR`
+	NextExecution  ConfigInstruction `@@?`
+}
+
+func (expression ConfOperatorExpression) config() {}
+func (expression ConfOperatorExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
 type LiteralExpression struct {
 	Pos lexer.Position
 
-	Value LiteralValue `@@`
+	Value util.Value `@@`
 }
 
 func (expression LiteralExpression) config() {}
@@ -389,91 +433,70 @@ func (expression LiteralExpression) pos() lexer.Position {
 	return expression.Pos
 }
 
-type LiteralValue interface {
-	literal()
-	pos() lexer.Position
-}
+type Char rune
 
-type ExprBoolean bool
-
-func (boolean *ExprBoolean) Capture(values []string) error {
-	*boolean = values[0] == "true"
-	return nil
-}
-
-type ExprBool struct {
-	Pos   lexer.Position
-	Value Boolean `@( "true" | "false" )`
-}
-
-func (b ExprBool) literal() {}
-func (b ExprBool) pos() lexer.Position {
-	return b.Pos
-}
-
-type ExprFloat struct {
-	Pos   lexer.Position
-	Value float64 `@DECIMAL`
-}
-
-func (f ExprFloat) literal() {}
-func (f ExprFloat) pos() lexer.Position {
-	return f.Pos
-}
-
-type ExprInt struct {
-	Pos   lexer.Position
-	Value int `@INTEGER`
-}
-
-func (f ExprInt) literal() {}
-func (f ExprInt) pos() lexer.Position {
-	return f.Pos
-}
-
-type ExprStringValue string
-
-func (stringVal *ExprStringValue) Capture(values []string) error {
-	if stringVal == nil {
-		*stringVal = ""
-	}
-
-	*stringVal += ExprStringValue(strings.Join(values, ""))
-	return nil
-}
-
-type ExprString struct {
-	Pos   lexer.Position
-	Value ExprStringValue `@QUOTED_VAL`
-}
-
-func (f ExprString) literal() {}
-func (f ExprString) pos() lexer.Position {
-	return f.Pos
-}
-
-type ExprCharValue rune
-
-func (stringVal *ExprCharValue) Capture(values []string) error {
-	if len(values[0]) > 1 {
-		return errors.New("char value is more than 1 character")
-	} else if len(values[0]) < 1 {
+func (charValue *Char) Capture(values []string) error {
+	valLen := len(values[0])
+	if valLen < 2 {
 		return errors.New("char values is less than 1 character")
 	}
 
-	*stringVal = ExprCharValue(rune(values[0][0]))
+	if valLen == 4 && values[0][1] == '\\' {
+		switch values[0][1] {
+		case '\'':
+			*charValue = '\''
+			return nil
+		case '"':
+			*charValue = '"'
+			return nil
+		case '\\':
+			*charValue = '\\'
+			return nil
+		case 'a':
+			*charValue = '\a'
+			return nil
+		case 'b':
+			*charValue = '\b'
+			return nil
+		case 'f':
+			*charValue = '\f'
+			return nil
+		case 'n':
+			*charValue = '\n'
+			return nil
+		case 'r':
+			*charValue = '\r'
+			return nil
+		case 't':
+			*charValue = '\t'
+			return nil
+		case 'v':
+			*charValue = '\v'
+			return nil
+		// TODO Maybe Include Hex Chars?
+		// Prob best if those are hexidecimal numerics
+		default:
+			return errors.New("unrecognized escape character")
+		}
+	}
+
+	if valLen > 3 {
+		return errors.New("char value is more than 1 character")
+	}
+
+	*charValue = Char(rune(values[0][1]))
 
 	return nil
 }
 
-type ExprChar struct {
-	Pos   lexer.Position
-	Value ExprCharValue `@SINGLE_QUOTED_VAL`
+type CharGrammar struct {
+	Position lexer.Position
+	Val      Char `@SINGLE_QUOTED_VAL`
 }
 
-func (f ExprChar) literal() {}
-func (f ExprChar) pos() lexer.Position {
-	return f.Pos
+func (f CharGrammar) Value() {}
+func (f CharGrammar) Pos() lexer.Position {
+	return f.Position
 }
 
 type Pattern struct {

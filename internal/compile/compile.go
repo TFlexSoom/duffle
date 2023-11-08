@@ -6,7 +6,8 @@ import (
 
 	"github.com/alecthomas/repr"
 	"github.com/tflexsoom/deflemma/internal/discovery"
-	"github.com/tflexsoom/deflemma/internal/parsing"
+	"github.com/tflexsoom/deflemma/internal/parsing/ddatgrammar"
+	"github.com/tflexsoom/deflemma/internal/parsing/dflgrammar"
 	"github.com/tflexsoom/deflemma/internal/types"
 )
 
@@ -20,8 +21,8 @@ type ParserOptions struct {
 }
 
 var parsers = map[types.SourceFileType](func() (types.SourceFileParser, error)){
-	types.FunctionFile: parsing.GetLFunParser,
-	types.DataFile:     parsing.GetLDatParser,
+	types.FunctionFile: dflgrammar.GetDflParser,
+	types.DataFile:     ddatgrammar.GetDdatParser,
 }
 
 func ParseOnly(options ParserOptions) error {

@@ -8,7 +8,7 @@ fact STAR char('*')
 fact NEWLINE char('\n')
 
 @exec number main <List[text] args> begin
-  lvls := text2Number (listGet 0 args)
+  lvls := text2Number (head args)
   printPyramid (lvls - ONE) lvls 
   return ZERO
 end
