@@ -5,8 +5,10 @@
 package parsing
 
 import (
+	"errors"
 	"io"
 	"regexp"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -30,20 +32,30 @@ func getLFunLexer() (*lexer.StatefulDefinition, error) {
 		"Operator": {
 			{Name: "OPERATOR", Pattern: `[^\d\w][^\w]*`, Action: nil},
 		},
-		"Root": {
-			lexer.Include("Spacing"),
-			{Name: "USE_KEYWORD", Pattern: `use`, Action: nil},
-			{Name: "FACT_KEYWORD", Pattern: `fact`, Action: nil},
-			{Name: "THEORY_KEYWORD", Pattern: `theory`, Action: nil},
-			{Name: "TYPE_PUNCTATION", Pattern: `[@\[\](),<>]`, Action: nil},
-			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Instruction")},
-			{Name: "EVALS_KEYWORD", Pattern: `evals`, Action: lexer.Push("Pattern")},
-			lexer.Include("Identity"),
+		"Literal": {
+			{Name: "DECIMAL", Pattern: `[\d]+\.[\d]*`, Action: nil},
+			{Name: "INTEGER", Pattern: `[\d]+`, Action: nil},
+			{Name: "SINGLE_QUOTED_VAL", Pattern: `'[~']*'`, Action: nil}, // Escape quotes?
+			{Name: "QUOTED_VAL", Pattern: `"[~"]*"`, Action: nil},        // Escape quotes?
+			{Name: "BOOL_VALUE", Pattern: `true|false`, Action: nil},
 		},
 		"Expression": {
 			lexer.Include("Spacing"),
 			{Name: "BACKTICK", Pattern: "`", Action: nil},
 			{Name: "EXPR_PUNCTATION", Pattern: `[();]`, Action: nil},
+			{Name: "ANNOTATION_SYMBOL", Pattern: `[@]`, Action: nil},
+		},
+		"Root": {
+			lexer.Include("Spacing"),
+			lexer.Include("Expression"),
+			{Name: "USE_KEYWORD", Pattern: `use`, Action: nil},
+			{Name: "FACT_KEYWORD", Pattern: `fact`, Action: nil},
+			{Name: "THEORY_KEYWORD", Pattern: `theory`, Action: nil},
+			{Name: "PARAM_PUNCTATION", Pattern: `[\[\],<>]`, Action: nil},
+			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Instruction")},
+			{Name: "EVALS_KEYWORD", Pattern: `evals`, Action: lexer.Push("Pattern")},
+			lexer.Include("Literal"),
+			lexer.Include("Identity"),
 		},
 		"Instruction": {
 			lexer.Include("Spacing"),
@@ -102,6 +114,13 @@ func GetLFunParser() (types.SourceFileParser, error) {
 			ListImport{},
 			SingleImport{},
 		),
+		participle.Union[ConfigInstruction](
+			CaptureExpression{},
+			ParentheticalExpression{},
+			ReferenceExpression{},
+			OperatorExpression{},
+			LiteralExpression{},
+		),
 		participle.Union[BlockInstruction](
 			BlockConditionalExpression{},
 			CaptureExpression{},
@@ -114,6 +133,13 @@ func GetLFunParser() (types.SourceFileParser, error) {
 			ParentheticalExpression{},
 			ReferenceExpression{},
 			OperatorExpression{},
+		),
+		participle.Union[LiteralValue](
+			ExprBool{},
+			ExprFloat{},
+			ExprInt{},
+			ExprString{},
+			ExprChar{},
 		),
 	)
 
@@ -200,19 +226,13 @@ func (modPart ConfigModulePart) pos() lexer.Position {
 type Config struct {
 	Pos      lexer.Position
 	IsUnique Uniqueness        `@( THEORY_KEYWORD | FACT_KEYWORD )`
-	Input    Input             `@@`
-	Value    InlineInstruction `@@`
+	Input    string            `@IDENTIFIER`
+	Value    ConfigInstruction `@@`
 }
 
-type Input struct {
-	Pos lexer.Position
-
-	Name string `@IDENTIFIER`
-}
-
-type Type struct {
-	Name     string `@IDENTIFIER`
-	Generics []Type `("[" @@ ("," @@)* "]")?`
+type ConfigInstruction interface {
+	config()
+	pos() lexer.Position
 }
 
 type FunctionModulePart struct {
@@ -224,6 +244,18 @@ type FunctionModulePart struct {
 func (modPart FunctionModulePart) modulePart() {}
 func (modPart FunctionModulePart) pos() lexer.Position {
 	return modPart.Pos
+}
+
+type Input struct {
+	Pos lexer.Position
+
+	Type Type   `@@`
+	Name string `@IDENTIFIER`
+}
+
+type Type struct {
+	Name     string `@IDENTIFIER`
+	Generics []Type `("[" @@ ("," @@)* "]")?`
 }
 
 type FunctionName struct {
@@ -300,6 +332,7 @@ type ParentheticalExpression struct {
 
 func (expression ParentheticalExpression) block()  {}
 func (expression ParentheticalExpression) inline() {}
+func (expression ParentheticalExpression) config() {}
 func (expression ParentheticalExpression) pos() lexer.Position {
 	return expression.Pos
 }
@@ -313,6 +346,7 @@ type CaptureExpression struct {
 
 func (expression CaptureExpression) block()  {}
 func (expression CaptureExpression) inline() {}
+func (expression CaptureExpression) config() {}
 func (expression CaptureExpression) pos() lexer.Position {
 	return expression.Pos
 }
@@ -326,6 +360,7 @@ type ReferenceExpression struct {
 
 func (expression ReferenceExpression) block()  {}
 func (expression ReferenceExpression) inline() {}
+func (expression ReferenceExpression) config() {}
 func (expression ReferenceExpression) pos() lexer.Position {
 	return expression.Pos
 }
@@ -338,8 +373,107 @@ type OperatorExpression struct {
 }
 
 func (expression OperatorExpression) inline() {}
+func (expression OperatorExpression) config() {}
 func (expression OperatorExpression) pos() lexer.Position {
 	return expression.Pos
+}
+
+type LiteralExpression struct {
+	Pos lexer.Position
+
+	Value LiteralValue `@@`
+}
+
+func (expression LiteralExpression) config() {}
+func (expression LiteralExpression) pos() lexer.Position {
+	return expression.Pos
+}
+
+type LiteralValue interface {
+	literal()
+	pos() lexer.Position
+}
+
+type ExprBoolean bool
+
+func (boolean *ExprBoolean) Capture(values []string) error {
+	*boolean = values[0] == "true"
+	return nil
+}
+
+type ExprBool struct {
+	Pos   lexer.Position
+	Value Boolean `@( "true" | "false" )`
+}
+
+func (b ExprBool) literal() {}
+func (b ExprBool) pos() lexer.Position {
+	return b.Pos
+}
+
+type ExprFloat struct {
+	Pos   lexer.Position
+	Value float64 `@DECIMAL`
+}
+
+func (f ExprFloat) literal() {}
+func (f ExprFloat) pos() lexer.Position {
+	return f.Pos
+}
+
+type ExprInt struct {
+	Pos   lexer.Position
+	Value int `@INTEGER`
+}
+
+func (f ExprInt) literal() {}
+func (f ExprInt) pos() lexer.Position {
+	return f.Pos
+}
+
+type ExprStringValue string
+
+func (stringVal *ExprStringValue) Capture(values []string) error {
+	if stringVal == nil {
+		*stringVal = ""
+	}
+
+	*stringVal += ExprStringValue(strings.Join(values, ""))
+	return nil
+}
+
+type ExprString struct {
+	Pos   lexer.Position
+	Value ExprStringValue `@QUOTED_VAL`
+}
+
+func (f ExprString) literal() {}
+func (f ExprString) pos() lexer.Position {
+	return f.Pos
+}
+
+type ExprCharValue rune
+
+func (stringVal *ExprCharValue) Capture(values []string) error {
+	if len(values[0]) > 1 {
+		return errors.New("char value is more than 1 character")
+	} else if len(values[0]) < 1 {
+		return errors.New("char values is less than 1 character")
+	}
+
+	*stringVal = ExprCharValue(rune(values[0][0]))
+
+	return nil
+}
+
+type ExprChar struct {
+	Pos   lexer.Position
+	Value ExprCharValue `@SINGLE_QUOTED_VAL`
+}
+
+func (f ExprChar) literal() {}
+func (f ExprChar) pos() lexer.Position {
+	return f.Pos
 }
 
 type Pattern struct {
