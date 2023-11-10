@@ -7,7 +7,7 @@ use text2Boolean
 
 end
 
-text getMessage <text prefix> <text message> begin
+@ text getMessage <text prefix> <text message> begin
   result := (
     @[&] begin 
       if ( USE_PREFIX ) then

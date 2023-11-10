@@ -1,16 +1,16 @@
 use sysout
 use loop
 
-fact ONE 1
-theory LEVELS 5
+@fact ONE := 1
+@theory LEVELS := 5
 
 @exec main begin
   printPyramid (LEVELS - ONE) LEVELS
 end
 
-fact ZERO 0
-fact ONE 1
-printPyramid <number level> <number max> begin
+@fact ZERO := 0
+@fact ONE := 1
+@ printPyramid <number level> <number max> begin
   ifthen (level > ZERO) return
 
   printStars (max - level)
@@ -24,9 +24,9 @@ printPyramid <number level> <number max> begin
 end
 
 
-fact STAR ( char '*' )
-fact NEWLINE ( char '\n' )
-printStars <number num> begin
+@fact STAR := '*'
+@fact NEWLINE := '\n' 
+@ printStars <number num> begin
   loop num `sysout STAR`
   sysout NEWLINE
 end

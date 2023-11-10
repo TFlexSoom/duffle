@@ -4,31 +4,31 @@ use (
   Function
 )
 
-fact ZERO 0
-fact ONE 1
-fact TWO 2
-fact STUDENTS listOf Student
+@fact ZERO := 0
+@fact ONE := 1
+@fact TWO := 2
+@fact STUDENTS := listOf Student
 
-struct Student 
+struct Student (
   <text Name>
   <decimal Gpa>
   <number Grade>
-end
+)
 
 @exec main begin
   sortedStudents := sortLambda STUDENTS (Student . Gpa)
   sysout sortedStudents
 end
 
-sysout <Student student> begin
+@ sysout <Student student> begin
   sysout (student . Name)
 end
 
-List[a] sort <List[a] items> begin
+@ List[a] sort <List[a] items> begin
   return (sortLambda items identity)
 end
 
-List[a] sortLambda <List[a] items> <Function[a, decimal] key> begin
+@ List[a] sortLambda <List[a] items> <Function[a, decimal] key> begin
   listLen := length items
   if (listLen <= ONE) then
     return items
@@ -41,7 +41,7 @@ List[a] sortLambda <List[a] items> <Function[a, decimal] key> begin
   return (mergeLambda firstHalf secondHalf key)
 end
 
-List[a] mergeLambda <List[a] firstHalf> <List[a] secondHalf> <Function[a, decimal] key> begin
+@ List[a] mergeLambda <List[a] firstHalf> <List[a] secondHalf> <Function[a, decimal] key> begin
   fLength := length firstHalf
   if (fLength = ZERO) then
     return secondHalf

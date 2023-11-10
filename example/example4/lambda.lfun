@@ -1,8 +1,8 @@
 use sysout
 
-fact USE_PREFIX false
-fact MESSAGE "Hello World"
-fact PREFIX "~"
+@fact USE_PREFIX := false
+@fact MESSAGE := "Hello World"
+@fact PREFIX := "~"
 
 @exec main begin
 
@@ -10,7 +10,7 @@ fact PREFIX "~"
 
 end
 
-text getMessage begin
+@ text getMessage begin
   result := ( 
     @ begin 
       if ( USE_PREFIX ) then
