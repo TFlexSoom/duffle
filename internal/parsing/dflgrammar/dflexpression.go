@@ -10,159 +10,171 @@ import (
 )
 
 type BlockExpression interface {
-	block()
-	pos() lexer.Position
+	Block()
+	Pos() lexer.Position
 }
 
 type InlineExpression interface {
-	inline()
-	pos() lexer.Position
+	Inline()
+	Pos() lexer.Position
 }
 
 type ConstexprExpression interface {
-	constexpr()
-	pos() lexer.Position
+	Constexpr()
+	Pos() lexer.Position
 }
 
 type BlockConditionalExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Condition      BlockExpression       `IF_KEYWORD "(" @@ ")"`
-	Execution      []InlineExpression    `THEN_KEYWORD EOL+ (@@ EOL*)*`
+	Execution      []InlineExpression    `THEN_KEYWORD EOL+ (@@ EOL+)*`
 	SubConditional []SubBlockConditional `@@*`
 	Alternative    []InlineExpression    `(ELSE_KEYWORD EOL+ (@@ EOL+)*)? END_IF_KEYWORD`
 }
 
-func (expression BlockConditionalExpression) block() {}
-func (expression BlockConditionalExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression BlockConditionalExpression) Block() {}
+func (expression BlockConditionalExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type SubBlockConditional struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Condition InlineExpression   `ELSEIF_KEYWORD "(" @@ ")"`
 	Execution []InlineExpression `THEN_KEYWORD EOL+ (@@ EOL+)*`
 }
 
-type InlineConditionalExpression struct {
-	Pos lexer.Position
+type LabelExpression struct {
+	Position lexer.Position
 
-	Condition     InlineExpression `INLINE_IF_KEYWORD "(" @@ ")"`
-	NextExecution InlineExpression `@@`
+	Label      string           `@IDENTIFIER`
+	Resolution InlineExpression `":=" @@`
 }
 
-func (expression InlineConditionalExpression) block() {}
-func (expression InlineConditionalExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression LabelExpression) Block() {}
+func (expression LabelExpression) Pos() lexer.Position {
+	return expression.Position
+}
+
+type InlineConditionalExpression struct {
+	Position lexer.Position
+
+	Condition          InlineExpression `INLINE_IF_KEYWORD "(" @@ ")"`
+	ConditionExecution InlineExpression `@@`
+}
+
+func (expression InlineConditionalExpression) Block() {}
+func (expression InlineConditionalExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type ParentheticalExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
-	Execution     InlineExpression `"(" @@ ")"`
+	Execution     InlineExpression `"(" EOL* @@ EOL* ")"`
 	NextExecution InlineExpression `@@?`
 }
 
-func (expression ParentheticalExpression) block()  {}
-func (expression ParentheticalExpression) inline() {}
-func (expression ParentheticalExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression ParentheticalExpression) Block()  {}
+func (expression ParentheticalExpression) Inline() {}
+func (expression ParentheticalExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type ConstexprParentheticalExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Execution     ConstexprExpression `"(" @@ ")"`
 	NextExecution ConstexprExpression `@@?`
 }
 
-func (expression ConstexprParentheticalExpression) constexpr()
-func (expression ConstexprParentheticalExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression ConstexprParentheticalExpression) Constexpr() {}
+func (expression ConstexprParentheticalExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type CaptureExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Execution     InlineExpression `BACKTICK @@ BACKTICK`
 	NextExecution InlineExpression `@@?`
 }
 
-func (expression CaptureExpression) block()  {}
-func (expression CaptureExpression) inline() {}
-func (expression CaptureExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression CaptureExpression) Block()  {}
+func (expression CaptureExpression) Inline() {}
+func (expression CaptureExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type ConstexprCaptureExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Execution     ConstexprExpression `BACKTICK @@ BACKTICK`
 	NextExecution ConstexprExpression `@@?`
 }
 
-func (expression ConstexprCaptureExpression) constexpr() {}
-func (expression ConstexprCaptureExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression ConstexprCaptureExpression) Constexpr() {}
+func (expression ConstexprCaptureExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type ReferenceExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	ReferenceGroup []string         `@IDENTIFIER+`
 	NextExecution  InlineExpression `@@?`
 }
 
-func (expression ReferenceExpression) block()  {}
-func (expression ReferenceExpression) inline() {}
-func (expression ReferenceExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression ReferenceExpression) Block()  {}
+func (expression ReferenceExpression) Inline() {}
+func (expression ReferenceExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type ConstexprReferenceExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	ReferenceGroup []string            `@IDENTIFIER+`
 	NextExecution  ConstexprExpression `@@?`
 }
 
-func (expression ConstexprReferenceExpression) constexpr() {}
-func (expression ConstexprReferenceExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression ConstexprReferenceExpression) Constexpr() {}
+func (expression ConstexprReferenceExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type OperatorExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	ReferenceGroup []string         `@OPERATOR`
 	NextExecution  InlineExpression `@@?`
 }
 
-func (expression OperatorExpression) inline() {}
-func (expression OperatorExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression OperatorExpression) Inline() {}
+func (expression OperatorExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type ConstexprOperatorExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	ReferenceGroup []string            `@OPERATOR`
 	NextExecution  ConstexprExpression `@@?`
 }
 
-func (expression ConstexprOperatorExpression) constexpr() {}
-func (expression ConstexprOperatorExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression ConstexprOperatorExpression) Constexpr() {}
+func (expression ConstexprOperatorExpression) Pos() lexer.Position {
+	return expression.Position
 }
 
 type LiteralExpression struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Value util.Value `@@`
 }
 
-func (expression LiteralExpression) constexpr() {}
-func (expression LiteralExpression) pos() lexer.Position {
-	return expression.Pos
+func (expression LiteralExpression) Constexpr() {}
+func (expression LiteralExpression) Pos() lexer.Position {
+	return expression.Position
 }

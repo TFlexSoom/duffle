@@ -7,13 +7,13 @@ package dflgrammar
 import "github.com/alecthomas/participle/v2/lexer"
 
 type FunctionModulePart struct {
-	Pos       lexer.Position
+	Position  lexer.Position
 	Functions []Function `( @@ EOL+ )+`
 }
 
-func (modPart FunctionModulePart) modulePart() {}
-func (modPart FunctionModulePart) pos() lexer.Position {
-	return modPart.Pos
+func (modPart FunctionModulePart) ModulePart() {}
+func (modPart FunctionModulePart) Pos() lexer.Position {
+	return modPart.Position
 }
 
 type FunctionName struct {
@@ -33,8 +33,8 @@ type FunctionDefinition interface {
 }
 
 type Function struct {
-	Pos        lexer.Position
-	Annotation *string            `"@" @IDENTIFIER? `
+	Position   lexer.Position
+	Annotation *string            `"@" (@IDENTIFIER | "@") `
 	Type       Type               `( @@ (?= IDENTIFIER ( BEGIN_KEYWORD | EVALS_KEYWORD | "<" ) ) )?`
 	Name       FunctionName       `( @IDENTIFIER | @OPERATOR )`
 	Inputs     []Input            `( "<" @@ ">")*`
@@ -42,28 +42,38 @@ type Function struct {
 }
 
 type ConstexprDefinition struct {
+	Position  lexer.Position
 	Constexpr []ConstexprExpression `":=" @@`
 }
 
-func (constexprDef ConstexprDefinition) FunctionDefinition() {}
-func (constexprDef ConstexprDefinition) Pos() lexer.Position
+func (expr ConstexprDefinition) FunctionDefinition() {}
+func (expr ConstexprDefinition) Pos() lexer.Position {
+	return expr.Position
+}
 
 type BlockDefinition struct {
+	Position     lexer.Position
 	Instructions []BlockExpression `BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD`
 }
 
-func (constexprDef BlockDefinition) FunctionDefinition() {}
-func (constexprDef BlockDefinition) Pos() lexer.Position
+func (expr BlockDefinition) FunctionDefinition() {}
+func (expr BlockDefinition) Pos() lexer.Position {
+	return expr.Position
+}
 
 type PatternDefinition struct {
+	Position lexer.Position
+
 	Patterns []Pattern `EVALS_KEYWORD EOL ( @@ EOL )* END_EVAL`
 }
 
-func (constexprDef PatternDefinition) FunctionDefinition() {}
-func (constexprDef PatternDefinition) Pos() lexer.Position
+func (expr PatternDefinition) FunctionDefinition() {}
+func (expr PatternDefinition) Pos() lexer.Position {
+	return expr.Position
+}
 
 type Pattern struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Name       string           `@IDENTIFIER`
 	Params     []string         `@IDENTIFIER* "="`

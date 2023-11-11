@@ -20,7 +20,7 @@ func GetDflParser() (types.SourceFileParser, error) {
 	parser, err := participle.Build[Module](
 		participle.Lexer(lexer),
 		participle.Elide("WHITESPACE"),
-		participle.UseLookahead(2),
+		participle.UseLookahead(1),
 		participle.Union[ModulePart](
 			ImportModulePart{},
 			StructModulePart{},
@@ -47,6 +47,7 @@ func GetDflParser() (types.SourceFileParser, error) {
 			CaptureExpression{},
 			InlineConditionalExpression{},
 			ParentheticalExpression{},
+			LabelExpression{},
 			ReferenceExpression{},
 		),
 		participle.Union[InlineExpression](

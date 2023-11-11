@@ -11,14 +11,14 @@ import (
 )
 
 type Module struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	ModuleParts []ModulePart `@@*`
 }
 
 type ModulePart interface {
-	modulePart()
-	pos() lexer.Position
+	ModulePart()
+	Pos() lexer.Position
 }
 
 type Type struct {
@@ -27,7 +27,7 @@ type Type struct {
 }
 
 type Input struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Type Type   `@@`
 	Name string `@IDENTIFIER`

@@ -10,9 +10,9 @@ use sysout
 
 end
 
-@ text getMessage begin
+@@ text getMessage begin
   result := ( 
-    @ begin 
+    @@ begin 
       if ( USE_PREFIX ) then
         return (concat PREFIX MESSAGE )
       endif

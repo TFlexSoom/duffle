@@ -7,13 +7,13 @@ package dflgrammar
 import "github.com/alecthomas/participle/v2/lexer"
 
 type StructModulePart struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Name   string  `STRUCT_KEYWORD @IDENTIFIER`
-	Fields []Input `"(" EOL ( "<" @@ ">" EOL )+ )`
+	Fields []Input `"(" EOL ( "<" @@ ">" EOL )+ ")" EOL+`
 }
 
-func (modPart StructModulePart) modulePart() {}
-func (modPart StructModulePart) pos() lexer.Position {
-	return modPart.Pos
+func (modPart StructModulePart) ModulePart() {}
+func (modPart StructModulePart) Pos() lexer.Position {
+	return modPart.Position
 }

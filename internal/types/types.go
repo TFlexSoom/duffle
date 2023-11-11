@@ -15,9 +15,8 @@ const (
 )
 
 var SourceFileEnding = map[string]SourceFileType{
-	"lfun": FunctionFile,
-	"ldat": DataFile,
-	"lmem": StructureFile,
+	"dfl":  FunctionFile,
+	"ddat": DataFile,
 }
 
 type SourceFileParser interface {

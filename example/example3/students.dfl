@@ -20,15 +20,15 @@ struct Student (
   sysout sortedStudents
 end
 
-@ sysout <Student student> begin
+@@ sysout <Student student> begin
   sysout (student . Name)
 end
 
-@ List[a] sort <List[a] items> begin
+@@ List[a] sort <List[a] items> begin
   return (sortLambda items identity)
 end
 
-@ List[a] sortLambda <List[a] items> <Function[a, decimal] key> begin
+@@ List[a] sortLambda <List[a] items> <Function[a, decimal] key> begin
   listLen := length items
   if (listLen <= ONE) then
     return items
@@ -41,7 +41,7 @@ end
   return (mergeLambda firstHalf secondHalf key)
 end
 
-@ List[a] mergeLambda <List[a] firstHalf> <List[a] secondHalf> <Function[a, decimal] key> begin
+@@ List[a] mergeLambda <List[a] firstHalf> <List[a] secondHalf> <Function[a, decimal] key> begin
   fLength := length firstHalf
   if (fLength = ZERO) then
     return secondHalf

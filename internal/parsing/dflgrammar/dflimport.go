@@ -7,39 +7,39 @@ package dflgrammar
 import "github.com/alecthomas/participle/v2/lexer"
 
 type ImportModulePart struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Imports []Import `( USE_KEYWORD @@ EOL+ )+`
 }
 
-func (modPart ImportModulePart) modulePart() {}
-func (modPart ImportModulePart) pos() lexer.Position {
-	return modPart.Pos
+func (modPart ImportModulePart) ModulePart() {}
+func (modPart ImportModulePart) Pos() lexer.Position {
+	return modPart.Position
 }
 
 type Import interface {
-	importVal()
-	pos() lexer.Position
+	ImportVal()
+	Pos() lexer.Position
 }
 
 type ListImport struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Value []string `"(" EOL+ (@IDENTIFIER EOL+)+ ")"`
 }
 
-func (listImport ListImport) importVal() {}
-func (listImport ListImport) pos() lexer.Position {
-	return listImport.Pos
+func (listImport ListImport) ImportVal() {}
+func (listImport ListImport) Pos() lexer.Position {
+	return listImport.Position
 }
 
 type SingleImport struct {
-	Pos lexer.Position
+	Position lexer.Position
 
 	Value []string `@IDENTIFIER`
 }
 
-func (singleImport SingleImport) importVal() {}
-func (singleImport SingleImport) pos() lexer.Position {
-	return singleImport.Pos
+func (singleImport SingleImport) ImportVal() {}
+func (singleImport SingleImport) Pos() lexer.Position {
+	return singleImport.Position
 }

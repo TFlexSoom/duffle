@@ -29,6 +29,7 @@ func getDdatLexer() (*lexer.StatefulDefinition, error) {
 		{Name: util.IntTagName, Pattern: util.IntRegex},
 		{Name: util.QuotedValTagName, Pattern: util.QuotedValRegex},
 		{Name: "BOOLEAN", Pattern: util.BooleanRegex},
+		{Name: "DOT_OPERATOR", Pattern: `\.`},
 		{Name: "IDENTIFIER", Pattern: `[a-zA-Z][a-zA-Z\d]*`},
 		{Name: "TEXT", Pattern: `[^\w\r\n]+`},
 	})
@@ -86,8 +87,9 @@ type Configuration struct {
 type Assignment struct {
 	Pos lexer.Position
 
-	Name  string     `@IDENTIFIER`
-	Value util.Value `WHITESPACE* "=" WHITESPACE* @@ WHITESPACE* EOL`
+	FirstName  *string    `@IDENTIFIER`
+	SecondName string     `("." @IDENTIFIER )?`
+	Value      util.Value `WHITESPACE* "=" WHITESPACE* @@ WHITESPACE* EOL`
 }
 
 type StringGrammar struct {
@@ -102,7 +104,7 @@ func (f StringGrammar) Pos() lexer.Position {
 
 type List struct {
 	Position lexer.Position
-	Values   []util.Value `"[" WHITESPACE* EOL? (WHITESPACE* @@ "," EOL?)* WHITESPACE* @@? WHITESPACE* EOL?"]"`
+	Values   []util.Value `"[" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE*"]"`
 }
 
 func (l List) Value() {}
@@ -112,7 +114,7 @@ func (l List) Pos() lexer.Position {
 
 type Struct struct {
 	Position lexer.Position
-	Fields   []util.Value `"(" WHITESPACE* EOL? (WHITESPACE* @@ "," EOL?)* WHITESPACE* @@? WHITESPACE* EOL? ")"`
+	Fields   []util.Value `"(" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE* ")"`
 }
 
 func (s Struct) Value() {}

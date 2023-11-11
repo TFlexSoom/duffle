@@ -39,11 +39,13 @@ func getDflLexer() (*lexer.StatefulDefinition, error) {
 			{Name: "BACKTICK", Pattern: "`", Action: nil},
 			{Name: "EXPR_PUNCTATION", Pattern: `[();]`, Action: nil},
 			{Name: "FUNCTION_SYMBOL", Pattern: `@`, Action: nil},
+			{Name: "CONSTEXPR_OPERATOR", Pattern: `:=`, Action: nil},
 		},
 		"Root": {
 			lexer.Include("Spacing"),
 			lexer.Include("Expression"),
 			{Name: "USE_KEYWORD", Pattern: `use`, Action: nil},
+			{Name: "STRUCT_KEYWORD", Pattern: `struct`, Action: nil},
 			{Name: "PARAM_PUNCTATION", Pattern: `[\[\],<>]`, Action: nil},
 			{Name: "BEGIN_KEYWORD", Pattern: `begin`, Action: lexer.Push("Instruction")},
 			{Name: "EVALS_KEYWORD", Pattern: `evals`, Action: lexer.Push("Pattern")},
