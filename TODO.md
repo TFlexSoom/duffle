@@ -1,9 +1,20 @@
+# For V-1
 - [x] Use participle for parsing
-- [ ] Create a compiler backend in golang for x86 and AMD
-- [ ] Cry inside.
+- [ ] Create Slimmer Tree IR
+- [ ] Create Type Inference Pipeline
+- [ ] Create Type Checking Pipeline
+- [ ] Translate IR to Assembly
 - [x] Create deflemma grammar
 - [ ] Create Tests
-- [ ] Create Spec
+- [ ] Create Spec With Defined Lexes
+- [ ] Add To Spec
 - [ ] Integrate Continuous Integration
 - [ ] Publish Package to gopkg
-- [ ] Mark version 1.0 
+- [ ] Define Backend Consumer API In Golang
+- [ ] Create Backend Consumer To Translate to Dockerfile
+- [ ] Create Backend Consumer To Translate to SQL
+- [ ] Create Backend Consumer To Translate to HTML-CSS-JS
+- [ ] Create Backend Consumer to Translate to Nginx Configuration
+- [ ] Create Example of a Webserver
+- [ ] Create a Package Manager Managed via Github
+- [ ] Mark Version 1
