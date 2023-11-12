@@ -94,16 +94,29 @@ func (expression ConstexprParentheticalExpression) Pos() lexer.Position {
 	return expression.Position
 }
 
-type CaptureExpression struct {
+type BlockCaptureExpression struct {
+	Position     lexer.Position
+	Annotation   *string           `"@" `
+	Type         Type              `( @@ (?= ( BEGIN_KEYWORD | EVALS_KEYWORD | "<" ) ) )?`
+	Inputs       []Input           `( "<" @@ ">")*`
+	Instructions []BlockExpression `BEGIN_KEYWORD EOL* ( @@ (";" | EOL) EOL* )* END_KEYWORD`
+}
+
+func (expression BlockCaptureExpression) Block() {}
+func (expression BlockCaptureExpression) Pos() lexer.Position {
+	return expression.Position
+}
+
+type InlineCaptureExpression struct {
 	Position lexer.Position
 
 	Execution     InlineExpression `BACKTICK @@ BACKTICK`
 	NextExecution InlineExpression `@@?`
 }
 
-func (expression CaptureExpression) Block()  {}
-func (expression CaptureExpression) Inline() {}
-func (expression CaptureExpression) Pos() lexer.Position {
+func (expression InlineCaptureExpression) Block()  {}
+func (expression InlineCaptureExpression) Inline() {}
+func (expression InlineCaptureExpression) Pos() lexer.Position {
 	return expression.Position
 }
 

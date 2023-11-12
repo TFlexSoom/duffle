@@ -44,14 +44,15 @@ func GetDflParser() (types.SourceFileParser, error) {
 		),
 		participle.Union[BlockExpression](
 			BlockConditionalExpression{},
-			CaptureExpression{},
+			BlockCaptureExpression{},
+			InlineCaptureExpression{},
 			InlineConditionalExpression{},
 			ParentheticalExpression{},
 			LabelExpression{},
 			ReferenceExpression{},
 		),
 		participle.Union[InlineExpression](
-			CaptureExpression{},
+			InlineCaptureExpression{},
 			ParentheticalExpression{},
 			ReferenceExpression{},
 			OperatorExpression{},
