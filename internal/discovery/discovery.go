@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/tflexsoom/deflemma/internal/types"
+	"github.com/tflexsoom/duffle/internal/files"
 )
 
-func DiscoverFiles(path string, verbose bool) (map[types.SourceFileType][]string, error) {
+func DiscoverFiles(path string, verbose bool) (map[files.SourceFileType][]string, error) {
 	if verbose {
 		log.Default().Printf("READING DIR %v", path)
 	}
 
-	fileMap := make(map[types.SourceFileType][]string)
+	fileMap := make(map[files.SourceFileType][]string)
 
 	filepath.WalkDir(path, func(path string, d os.DirEntry, err error) error {
 		if verbose {
@@ -25,8 +25,8 @@ func DiscoverFiles(path string, verbose bool) (map[types.SourceFileType][]string
 			return err
 		}
 
-		sourceFileType := types.SourceFileEnding[GetFileEnding(path)]
-		if sourceFileType != types.UNKNOWN_SOURCE_FILE {
+		sourceFileType := files.SourceFileEnding[GetFileEnding(path)]
+		if sourceFileType != files.UNKNOWN_SOURCE_FILE {
 			fileMap[sourceFileType] = append(fileMap[sourceFileType], path)
 		}
 

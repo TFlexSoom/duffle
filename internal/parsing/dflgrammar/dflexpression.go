@@ -6,7 +6,7 @@ package dflgrammar
 
 import (
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/tflexsoom/deflemma/internal/parsing/util"
+	"github.com/tflexsoom/duffle/internal/parsing/util"
 )
 
 type BlockExpression interface {

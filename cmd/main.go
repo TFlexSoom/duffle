@@ -5,9 +5,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/tflexsoom/duffle/internal/command"
 	"github.com/urfave/cli/v2"
-
-	"github.com/tflexsoom/deflemma/internal/compile"
 )
 
 func main() {
@@ -82,12 +81,11 @@ var parseFlags = append(baseFlags,
 )
 
 func parseSubCmd(cCtx *cli.Context) error {
-	return compile.ParseOnly(compile.ParserOptions{
+	return command.ParseOnly(command.ParserOptions{
 		ProjectLocations: cCtx.Args().Slice(),
 		OutputLocation:   cCtx.Path("output"),
 		FunctionOnly:     cCtx.Bool("function"),
 		DataOnly:         cCtx.Bool("data"),
-		MemoryOnly:       cCtx.Bool("memory"),
 		Verbose:          cCtx.Bool("verbose"),
 	})
 }
@@ -102,9 +100,11 @@ var compileFlags = append(baseFlags,
 )
 
 func compileSubCmd(cCtx *cli.Context) error {
-	return compile.Compile(compile.CompilerOptions{
+	return command.Compile(command.CompilerOptions{
 		ProjectLocations: cCtx.Args().Slice(),
 		OutputLocation:   cCtx.Path("output"),
+		FunctionOnly:     cCtx.Bool("function"),
+		DataOnly:         cCtx.Bool("data"),
 		Backend:          cCtx.String("backend"),
 		Verbose:          cCtx.Bool("verbose"),
 	})

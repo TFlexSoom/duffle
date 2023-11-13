@@ -1,4 +1,4 @@
-package types
+package files
 
 import (
 	"io"
@@ -10,7 +10,6 @@ const (
 	UNKNOWN_SOURCE_FILE SourceFileType = iota
 	FunctionFile
 	DataFile
-	StructureFile
 	SOURCE_FILE_TYPE_LENGTH
 )
 

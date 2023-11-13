@@ -10,8 +10,8 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/tflexsoom/deflemma/internal/parsing/util"
-	"github.com/tflexsoom/deflemma/internal/types"
+	"github.com/tflexsoom/duffle/internal/files"
+	"github.com/tflexsoom/duffle/internal/parsing/util"
 )
 
 // // Lexer
@@ -46,7 +46,7 @@ func (configParser *ConfigurationParser) ParseSourceFile(
 	return configParser.Parser.Parse(fileName, reader)
 }
 
-func GetDdatParser() (types.SourceFileParser, error) {
+func GetDdatParser() (files.SourceFileParser, error) {
 	var lexer, err = getDdatLexer()
 	if err != nil {
 		return nil, err

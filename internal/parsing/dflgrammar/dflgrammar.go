@@ -6,12 +6,12 @@ package dflgrammar
 
 import (
 	"github.com/alecthomas/participle/v2"
-	"github.com/tflexsoom/deflemma/internal/types"
 
-	"github.com/tflexsoom/deflemma/internal/parsing/util"
+	"github.com/tflexsoom/duffle/internal/files"
+	"github.com/tflexsoom/duffle/internal/parsing/util"
 )
 
-func GetDflParser() (types.SourceFileParser, error) {
+func GetDflParser() (files.SourceFileParser, error) {
 	var lexer, err = getDflLexer()
 	if err != nil {
 		return nil, err

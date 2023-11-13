@@ -1,4 +1,4 @@
-module github.com/tflexsoom/deflemma
+module github.com/tflexsoom/duffle
 
 go 1.21
 
