@@ -11,20 +11,26 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:  "deflemma",
-		Usage: "deflemma tool suite for deflemma projects and modules.",
+		Name:  "duffle",
+		Usage: "duffle tool suite for duffle projects and modules.",
 		Commands: []*cli.Command{
 			{
+				Name:   "compile",
+				Usage:  "compile a local duffle project",
+				Flags:  compileFlags,
+				Action: multiProjectCmd("compile", compileSubCmd),
+			},
+			{
 				Name:   "parse",
-				Usage:  "parse a local deflemma project",
+				Usage:  "parse a local duffle project",
 				Flags:  parseFlags,
 				Action: multiProjectCmd("parse", parseSubCmd),
 			},
 			{
-				Name:   "compile",
-				Usage:  "compile a local deflemma project",
-				Flags:  compileFlags,
-				Action: multiProjectCmd("compile", compileSubCmd),
+				Name:   "typecheck",
+				Usage:  "typecheck a duffle project",
+				Flags:  baseFlags,
+				Action: multiProjectCmd("typecheck", typecheckSubCmd),
 			},
 		},
 	}
@@ -73,11 +79,6 @@ var parseFlags = append(baseFlags,
 		Usage: "Only Parse Data Files",
 		Value: false,
 	},
-	&cli.BoolFlag{
-		Name:  "memory",
-		Usage: "Only Parse Memory Structure Files",
-		Value: false,
-	},
 )
 
 func parseSubCmd(cCtx *cli.Context) error {
@@ -90,7 +91,15 @@ func parseSubCmd(cCtx *cli.Context) error {
 	})
 }
 
-var compileFlags = append(baseFlags,
+func typecheckSubCmd(cCtx *cli.Context) error {
+	return command.TypeCheckOnly(command.TypeCheckOptions{
+		ProjectLocations: cCtx.Args().Slice(),
+		OutputLocation:   cCtx.Path("output"),
+		Verbose:          cCtx.Bool("verbose"),
+	})
+}
+
+var compileFlags = append(parseFlags,
 	&cli.StringFlag{
 		Name:        "backend",
 		Aliases:     []string{"B"},

@@ -9,6 +9,7 @@ import (
 	"github.com/tflexsoom/duffle/internal/files"
 	"github.com/tflexsoom/duffle/internal/parsing/ddatgrammar"
 	"github.com/tflexsoom/duffle/internal/parsing/dflgrammar"
+	"github.com/tflexsoom/duffle/internal/typing"
 )
 
 func getFileMap(projectLocations []string, isVerbose bool) (map[files.SourceFileType][]string, error) {
@@ -117,13 +118,22 @@ var parsers = map[files.SourceFileType](func() (files.SourceFileParser, error)){
 	files.DataFile:     ddatgrammar.GetDdatParser,
 }
 
-func parseProcessor(sourceFileType files.SourceFileType, file string, reader *os.File) (string, error) {
+func parseProcessor(sourceFileType files.SourceFileType, file string, reader *os.File) (interface{}, error) {
 	parser, err := parsers[sourceFileType]()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ast, err := parser.ParseSourceFile(file, reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return ast, nil
+}
+
+func parseStringProcessor(sourceFileType files.SourceFileType, file string, reader *os.File) (string, error) {
+	ast, err := parseProcessor(sourceFileType, file, reader)
 	if err != nil {
 		return "", err
 	}
@@ -160,7 +170,51 @@ func (options ParserOptions) IsVerbose() bool {
 }
 
 func ParseOnly(options ParserOptions) error {
-	return withFileLogicAndOutput(options, parseProcessor)
+	return withFileLogicAndOutput(options, parseStringProcessor)
+}
+
+func typeCheckProcessor(sourceFileType files.SourceFileType, file string, reader *os.File) (string, error) {
+	ast, err := parseProcessor(sourceFileType, file, reader)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := typing.TypeCheck(ast)
+	if err != nil {
+		return "", err
+	}
+
+	return data, nil
+}
+
+type TypeCheckOptions struct {
+	ProjectLocations []string
+	OutputLocation   string
+	Verbose          bool
+}
+
+func (options TypeCheckOptions) GetProjectLocations() []string {
+	return options.ProjectLocations
+}
+
+func (options TypeCheckOptions) GetFunctionFilesOnly() bool {
+	return true
+}
+
+func (options TypeCheckOptions) GetDataFilesOnly() bool {
+	return false
+}
+
+func (options TypeCheckOptions) GetOutputLocation() string {
+	return options.OutputLocation
+}
+
+func (options TypeCheckOptions) IsVerbose() bool {
+	return options.Verbose
+}
+
+func TypeCheckOnly(options TypeCheckOptions) error {
+	return withFileLogicAndOutput(options, typeCheckProcessor)
 }
 
 func compileProcessor(sourceFileType files.SourceFileType, file string, reader *os.File) (string, error) {
