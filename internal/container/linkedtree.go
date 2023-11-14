@@ -33,7 +33,7 @@ func newLinkedTreeCapRecursive[V any](node *LinkedTreeNode[V], branches uint, de
 }
 
 func (lt *LinkedTreeNode[V]) Length() uint {
-	return uint(len(lt.LeftBreadthFirst()))
+	return uint(len(LeftBreadthFirst(lt)))
 }
 
 func (lt *LinkedTreeNode[V]) GetValue() V {
@@ -88,92 +88,6 @@ func (lt *LinkedTreeNode[V]) GetChildren() []V {
 	return result
 }
 
-func (lt *LinkedTreeNode[V]) collector(
-	appender func(*[]LinkedTreeNode[V], *LinkedTreeNode[V]),
-	nextItem func(*[]LinkedTreeNode[V], int) *LinkedTreeNode[V],
-	isLeftRightAdd bool,
-) []V {
-	data := make([]LinkedTreeNode[V], 0, 1024)
-	appender(&data, lt)
-	result := make([]V, 0, 1024)
-
-	for count := 1; count > 0; count-- {
-		curNode := nextItem(&data, count)
-
-		result = append(result, curNode.Value)
-		if curNode.IsLeaf() {
-			continue
-		}
-
-		if isLeftRightAdd {
-			length := len(curNode.Children)
-			for i := 0; i < length; i++ {
-				appender(&data, &curNode.Children[i])
-				count++
-			}
-		} else {
-			for i := len(curNode.Children) - 1; i >= 0; i-- {
-				appender(&data, &curNode.Children[i])
-				count++
-			}
-		}
-	}
-
-	return result
-}
-
-func (lt LinkedTreeNode[V]) LeftDepthFirst() []V {
-	return lt.collector(
-		func(stack *[]LinkedTreeNode[V], node *LinkedTreeNode[V]) {
-			*stack = append(*stack, *node)
-		},
-		func(stack *[]LinkedTreeNode[V], count int) *LinkedTreeNode[V] {
-			result := (*stack)[count-1]
-			(*stack) = (*stack)[0 : count-1]
-			return &result
-		},
-		false,
-	)
-}
-
-func (lt LinkedTreeNode[V]) RightDepthFirst() []V {
-	return lt.collector(
-		func(stack *[]LinkedTreeNode[V], node *LinkedTreeNode[V]) {
-			*stack = append(*stack, *node)
-		},
-		func(stack *[]LinkedTreeNode[V], count int) *LinkedTreeNode[V] {
-			result := (*stack)[count-1]
-			(*stack) = (*stack)[0 : count-1]
-			return &result
-		},
-		true,
-	)
-}
-
-func (lt LinkedTreeNode[V]) LeftBreadthFirst() []V {
-	return lt.collector(
-		func(queue *[]LinkedTreeNode[V], node *LinkedTreeNode[V]) {
-			*queue = append(*queue, *node)
-		},
-		func(queue *[]LinkedTreeNode[V], count int) *LinkedTreeNode[V] {
-			result := (*queue)[0]
-			(*queue) = (*queue)[1:count]
-			return &result
-		},
-		true,
-	)
-}
-
-func (lt LinkedTreeNode[V]) RightBreadthFirst() []V {
-	return lt.collector(
-		func(queue *[]LinkedTreeNode[V], node *LinkedTreeNode[V]) {
-			*queue = append(*queue, *node)
-		},
-		func(queue *[]LinkedTreeNode[V], count int) *LinkedTreeNode[V] {
-			result := (*queue)[0]
-			(*queue) = (*queue)[1:count]
-			return &result
-		},
-		false,
-	)
+func (lt *LinkedTreeNode[V]) AllData() []V {
+	return LeftBreadthFirst(lt)
 }
