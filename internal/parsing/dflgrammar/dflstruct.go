@@ -9,11 +9,17 @@ import "github.com/alecthomas/participle/v2/lexer"
 type StructModulePart struct {
 	Position lexer.Position
 
-	Name   string  `STRUCT_KEYWORD @IDENTIFIER`
-	Fields []Input `"(" EOL ( "<" @@ ">" EOL )+ ")" EOL+`
+	Structs []Struct
 }
 
 func (modPart StructModulePart) ModulePart() {}
 func (modPart StructModulePart) Pos() lexer.Position {
 	return modPart.Position
+}
+
+type Struct struct {
+	Position lexer.Position
+
+	Name   string  `STRUCT_KEYWORD @IDENTIFIER`
+	Fields []Input `"(" EOL ( "<" @@ ">" EOL )+ ")" EOL+`
 }

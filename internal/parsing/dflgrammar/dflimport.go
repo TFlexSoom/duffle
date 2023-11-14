@@ -18,7 +18,7 @@ func (modPart ImportModulePart) Pos() lexer.Position {
 }
 
 type Import interface {
-	ImportVal()
+	ImportVal() []string
 	Pos() lexer.Position
 }
 
@@ -28,7 +28,9 @@ type ListImport struct {
 	Value []string `"(" EOL+ (@IDENTIFIER EOL+)+ ")"`
 }
 
-func (listImport ListImport) ImportVal() {}
+func (listImport ListImport) ImportVal() []string {
+	return listImport.Value
+}
 func (listImport ListImport) Pos() lexer.Position {
 	return listImport.Position
 }
@@ -36,10 +38,14 @@ func (listImport ListImport) Pos() lexer.Position {
 type SingleImport struct {
 	Position lexer.Position
 
-	Value []string `@IDENTIFIER`
+	Value string `@IDENTIFIER`
 }
 
-func (singleImport SingleImport) ImportVal() {}
+func (singleImport SingleImport) ImportVal() []string {
+	return []string{
+		singleImport.Value,
+	}
+}
 func (singleImport SingleImport) Pos() lexer.Position {
 	return singleImport.Position
 }

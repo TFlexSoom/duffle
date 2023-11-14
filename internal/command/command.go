@@ -179,7 +179,7 @@ func typeCheckProcessor(sourceFileType files.SourceFileType, file string, reader
 		return "", err
 	}
 
-	data, err := typing.TypeCheck(ast)
+	data, err := typing.TypeCheck(file, ast)
 	if err != nil {
 		return "", err
 	}
