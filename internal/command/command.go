@@ -1,12 +1,14 @@
 package command
 
 import (
+	"errors"
 	"log"
 	"os"
 
 	"github.com/alecthomas/repr"
 	"github.com/tflexsoom/duffle/internal/discovery"
 	"github.com/tflexsoom/duffle/internal/files"
+	"github.com/tflexsoom/duffle/internal/intermediate"
 	"github.com/tflexsoom/duffle/internal/parsing/ddatgrammar"
 	"github.com/tflexsoom/duffle/internal/parsing/dflgrammar"
 	"github.com/tflexsoom/duffle/internal/typing"
@@ -173,13 +175,74 @@ func ParseOnly(options ParserOptions) error {
 	return withFileLogicAndOutput(options, parseStringProcessor)
 }
 
+func intermediateRepresentationProcessor(
+	sourceFileType files.SourceFileType,
+	file string,
+	reader *os.File,
+) (string, error) {
+	ast, err := parseProcessor(sourceFileType, file, reader)
+	if err != nil {
+		return "", err
+	}
+
+	casted, isOk := ast.(*dflgrammar.Module)
+	if !isOk {
+		return "", errors.New("casting module did not work for parsing to ir")
+	}
+
+	symbols := make(map[uint64]intermediate.SymbolPosition)
+	imports, references, err := intermediate.GetIR(file, *casted, &symbols)
+	if err != nil {
+		return "", err
+	}
+
+	resultingSlice := "IMPORTS:\n" + repr.String(imports) + "\nREFERENCES:\n" + repr.String(references)
+
+	return resultingSlice, nil
+}
+
+type IntermediateRepresentationOptions struct {
+	ProjectLocations []string
+	OutputLocation   string
+	Verbose          bool
+}
+
+func (options IntermediateRepresentationOptions) GetProjectLocations() []string {
+	return options.ProjectLocations
+}
+
+func (options IntermediateRepresentationOptions) GetFunctionFilesOnly() bool {
+	return true
+}
+
+func (options IntermediateRepresentationOptions) GetDataFilesOnly() bool {
+	return false
+}
+
+func (options IntermediateRepresentationOptions) GetOutputLocation() string {
+	return options.OutputLocation
+}
+
+func (options IntermediateRepresentationOptions) IsVerbose() bool {
+	return options.Verbose
+}
+
+func IntermediateRepresentationOnly(options IntermediateRepresentationOptions) error {
+	return withFileLogicAndOutput(options, intermediateRepresentationProcessor)
+}
+
 func typeCheckProcessor(sourceFileType files.SourceFileType, file string, reader *os.File) (string, error) {
 	ast, err := parseProcessor(sourceFileType, file, reader)
 	if err != nil {
 		return "", err
 	}
 
-	data, err := typing.TypeCheck(file, ast)
+	casted, isOk := ast.(*dflgrammar.Module)
+	if !isOk {
+		return "", errors.New("casting module did not work for parsing to ir")
+	}
+
+	data, err := typing.TypeCheck(file, *casted)
 	if err != nil {
 		return "", err
 	}

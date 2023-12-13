@@ -1,22 +1,15 @@
 package typing
 
 import (
-	"errors"
-
 	"github.com/tflexsoom/duffle/internal/intermediate"
 	"github.com/tflexsoom/duffle/internal/parsing/dflgrammar"
 )
 
 const PASS_STRING = "PASS"
 
-func TypeCheck(fileName string, ast interface{}) (string, error) {
-	vfunc, isOk := ast.(dflgrammar.Module)
-	if !isOk {
-		return "", errors.New("unknown ast type")
-	}
-
+func TypeCheck(fileName string, ast dflgrammar.Module) (string, error) {
 	symbols := make(map[uint64]intermediate.SymbolPosition)
-	_, _, err := intermediate.GetIR(fileName, vfunc, &symbols)
+	_, _, err := intermediate.GetIR(fileName, ast, &symbols)
 	if err != nil {
 		return "", err
 	}
