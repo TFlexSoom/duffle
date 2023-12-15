@@ -1,9 +1,5 @@
-use sysout
+@import sysout := use sysout
 
 @fact MSG := "Hello World"
 
-@exec main begin
-
-sysout MSG
-
-end
+@exec main := sysout MSG

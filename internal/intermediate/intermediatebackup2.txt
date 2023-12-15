@@ -1,0 +1,42 @@
+package intermediate
+
+import (
+	"github.com/tflexsoom/duffle/internal/parsing/dflgrammar"
+)
+
+func GetIR(fileName string, ast dflgrammar.Module, symbolPositions *map[uint64]SymbolPosition) ([]ImportName, []Reference, error) {
+	imports := make([]ImportName, 0, max(1024, len(ast.ModuleParts)))
+	references := make([]Reference, 0, max(1024, len(ast.ModuleParts)))
+
+	addSymbol := func(uid uint64, lineNumber int, colNumber int) {
+		(*symbolPositions)[uid] = SymbolPosition{
+			FileName:   fileName,
+			LineNumber: lineNumber,
+			ColNumber:  colNumber,
+		}
+	}
+
+	for _, part := range ast.ModuleParts {
+		importable, isOk := part.(dflgrammar.ImportModulePart)
+		if isOk {
+			appendImports(&imports, importable)
+		}
+
+		structable, isOk := part.(dflgrammar.StructModulePart)
+		if isOk {
+			appendStructRefs(&references, structable, addSymbol)
+		}
+
+		functionable, isOk := part.(dflgrammar.FunctionModulePart)
+		if isOk {
+			appendFunctionRefs(&references, functionable, addSymbol)
+		}
+	}
+
+	importsRetyped := make([]ImportName, 0, len(imports))
+	for _, importName := range imports {
+		importsRetyped = append(importsRetyped, ImportName(importName))
+	}
+
+	return importsRetyped, references, nil
+}
