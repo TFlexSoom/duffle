@@ -1,4 +1,4 @@
-use sysout
+@import sysout := use (dfl.sysout)
 
 @fact USE_PREFIX := false
 @fact MESSAGE := "Hello World"

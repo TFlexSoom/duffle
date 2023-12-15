@@ -26,12 +26,12 @@ func main() {
 				Flags:  parseFlags,
 				Action: multiProjectCmd("parse", parseSubCmd),
 			},
-			{
-				Name:   "ir",
-				Usage:  "parse a file into an intermediate representation",
-				Flags:  baseFlags,
-				Action: multiProjectCmd("ir", irSubCmd),
-			},
+			// {
+			// 	Name:   "ir",
+			// 	Usage:  "parse a file into an intermediate representation",
+			// 	Flags:  baseFlags,
+			// 	Action: multiProjectCmd("ir", irSubCmd),
+			// },
 			{
 				Name:   "typecheck",
 				Usage:  "typecheck a duffle project",
@@ -97,15 +97,15 @@ func parseSubCmd(cCtx *cli.Context) error {
 	})
 }
 
-func irSubCmd(cCtx *cli.Context) error {
-	return command.IntermediateRepresentationOnly(
-		command.IntermediateRepresentationOptions{
-			ProjectLocations: cCtx.Args().Slice(),
-			OutputLocation:   cCtx.Path("output"),
-			Verbose:          cCtx.Bool("verbose"),
-		},
-	)
-}
+// func irSubCmd(cCtx *cli.Context) error {
+// 	return command.IntermediateRepresentationOnly(
+// 		command.IntermediateRepresentationOptions{
+// 			ProjectLocations: cCtx.Args().Slice(),
+// 			OutputLocation:   cCtx.Path("output"),
+// 			Verbose:          cCtx.Bool("verbose"),
+// 		},
+// 	)
+// }
 
 func typecheckSubCmd(cCtx *cli.Context) error {
 	return command.TypeCheckOnly(command.TypeCheckOptions{

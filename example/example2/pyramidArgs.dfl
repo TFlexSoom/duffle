@@ -1,6 +1,6 @@
-use sysout
-use loop
-use text2Number
+@import sysout := use (dfl.sysout)
+@import sysout := use (dfl.loop)
+@import sysout := use (dfl.text2Number)
 
 @fact ZERO := 0
 @fact ONE := 1

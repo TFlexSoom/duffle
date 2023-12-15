@@ -1,8 +1,6 @@
-use (
-  sysout
-  identity
-  Function
-)
+@import sysout := use (dfl.sysout)
+@import identity := use (dfl.identity)
+@import Function := use (dfl.Function)
 
 @fact ZERO := 0
 @fact ONE := 1

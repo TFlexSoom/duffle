@@ -1,5 +1,5 @@
-use sysout
-use loop
+@import sysout := use (dfl.sysout)
+@import loop := use (dfl.loop)
 
 @fact ONE := 1
 @theory LEVELS := 5

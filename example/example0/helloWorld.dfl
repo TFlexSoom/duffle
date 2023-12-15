@@ -1,4 +1,4 @@
-@import sysout := use sysout
+@import sysout := use (dfl.sysout)
 
 @fact MSG := "Hello World"
 
