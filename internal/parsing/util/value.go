@@ -8,12 +8,13 @@ package util
 import (
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/tflexsoom/duffle/internal/container"
+	"github.com/tflexsoom/duffle/internal/intermediate"
 )
 
 //// Grammar
 
 type Value interface {
-	Value() container.Tree[string]
+	Value() container.Tree[intermediate.DataValue]
 	Pos() lexer.Position
 	IsGroup() bool
 }
@@ -25,8 +26,12 @@ type BoolGrammar struct {
 	Val      string `@( "true" | "false" )`
 }
 
-func (b BoolGrammar) Value() container.Tree[string] {
-	return container.NewGraphTreeCap[string](1, 1).AddChild(b.Val)
+func (b BoolGrammar) Value() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_BOOLEAN,
+			TextValue: b.Val,
+		})
 
 }
 func (b BoolGrammar) Pos() lexer.Position {
@@ -44,8 +49,13 @@ type FloatGrammar struct {
 	Val      string `@DECIMAL`
 }
 
-func (f FloatGrammar) Value() container.Tree[string] {
-	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+func (f FloatGrammar) Value() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_DECIMAL,
+			TextValue: f.Val,
+		})
+
 }
 func (f FloatGrammar) Pos() lexer.Position {
 	return f.Position
@@ -62,8 +72,12 @@ type IntGrammar struct {
 	Val      string `@INTEGER`
 }
 
-func (f IntGrammar) Value() container.Tree[string] {
-	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+func (f IntGrammar) Value() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_INTEGER,
+			TextValue: f.Val,
+		})
 }
 func (f IntGrammar) Pos() lexer.Position {
 	return f.Position
@@ -80,8 +94,12 @@ type StringGrammar struct {
 	Val      string `@QUOTED_VAL`
 }
 
-func (f StringGrammar) Value() container.Tree[string] {
-	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+func (f StringGrammar) Value() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_TEXT,
+			TextValue: f.Val,
+		})
 }
 
 func (f StringGrammar) Pos() lexer.Position {

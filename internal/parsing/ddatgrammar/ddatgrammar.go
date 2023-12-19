@@ -114,8 +114,12 @@ type StringGrammar struct {
 	Val      string `(@IDENTIFIER | @QUOTED_VAL | @TEXT) (@WHITESPACE* (@IDENTIFIER | @TEXT))*`
 }
 
-func (f StringGrammar) Value() container.Tree[string] {
-	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+func (f StringGrammar) Value() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_TEXT,
+			TextValue: f.Val,
+		})
 }
 
 func (f StringGrammar) Pos() lexer.Position {
@@ -130,12 +134,18 @@ type List struct {
 	Vals     []util.Value `"[" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE*"]"`
 }
 
-func (l List) Value() container.Tree[string] {
-	result := container.NewGraphTreeCap[string](2, uint(len(l.Vals)))
+func (l List) Value() container.Tree[intermediate.DataValue] {
+	result := container.NewGraphTreeCap[intermediate.DataValue](2, uint(len(l.Vals)))
+	result.SetValue(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_LIST,
+			TextValue: "",
+		},
+	)
 
-	for i, val := range l.Vals {
+	for _, val := range l.Vals {
 		if val.IsGroup() {
-			container.AddChildren(result.GetChild(i), (val.Value()))
+			container.AddChildren(result, (val.Value()))
 		} else {
 			result.AddChild(val.Value().GetValue())
 		}
@@ -156,12 +166,18 @@ type Struct struct {
 	Vals     []util.Value `"(" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE* ")"`
 }
 
-func (s Struct) Value() container.Tree[string] {
-	result := container.NewGraphTreeCap[string](2, uint(len(s.Vals)))
+func (s Struct) Value() container.Tree[intermediate.DataValue] {
+	result := container.NewGraphTreeCap[intermediate.DataValue](2, uint(len(s.Vals)))
+	result.SetValue(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_STRUCT,
+			TextValue: "",
+		},
+	)
 
-	for i, val := range s.Vals {
+	for _, val := range s.Vals {
 		if val.IsGroup() {
-			container.AddChildren(result.GetChild(i), (val.Value()))
+			container.AddChildren(result, (val.Value()))
 		} else {
 			result.AddChild(val.Value().GetValue())
 		}

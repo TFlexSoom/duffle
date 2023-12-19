@@ -2,14 +2,7 @@ package intermediate
 
 import "github.com/tflexsoom/duffle/internal/container"
 
-type TypeId uint32
 type OpCode uint32
-
-const (
-	OPCODE_NOOP OpCode = iota
-	OPCODE_CONST
-	OPCODE_CALL
-)
 
 type SenimentExpression struct {
 	TypeId TypeId
@@ -33,3 +26,9 @@ type Goal struct {
 	Sentments map[string]Sentiment
 	Types     map[TypeId]string
 }
+
+const (
+	OPCODE_NOOP OpCode = iota
+	OPCODE_CONST
+	OPCODE_CALL
+)

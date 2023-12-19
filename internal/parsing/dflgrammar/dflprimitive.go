@@ -7,6 +7,7 @@ package dflgrammar
 import (
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/tflexsoom/duffle/internal/container"
+	"github.com/tflexsoom/duffle/internal/intermediate"
 )
 
 type Module struct {
@@ -37,8 +38,12 @@ type Char struct {
 	Val      string `@SINGLE_QUOTED_VAL`
 }
 
-func (f Char) Value() container.Tree[string] {
-	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+func (f Char) Value() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_CHAR,
+			TextValue: f.Val,
+		})
 }
 func (f Char) Pos() lexer.Position {
 	return f.Position

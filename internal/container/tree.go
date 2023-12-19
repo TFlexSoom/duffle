@@ -13,9 +13,9 @@ type Tree[V any] interface {
 }
 
 func AddChildren[V any](self Tree[V], other Tree[V]) Tree[V] {
-	self.AddChild(other.GetValue())
+	subTree := self.AddChild(other.GetValue())
 	for _, child := range other.GetChildren() {
-		AddChildren[V](self.GetChild(0), child)
+		AddChildren[V](subTree, child)
 	}
 
 	return self
