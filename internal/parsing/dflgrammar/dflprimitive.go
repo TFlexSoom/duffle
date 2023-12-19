@@ -5,9 +5,8 @@
 package dflgrammar
 
 import (
-	"errors"
-
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/tflexsoom/duffle/internal/container"
 )
 
 type Module struct {
@@ -33,68 +32,17 @@ type Input struct {
 	Name string `@IDENTIFIER`
 }
 
-type Char rune
-
-func (charValue *Char) Capture(values []string) error {
-	valLen := len(values[0])
-	if valLen < 2 {
-		return errors.New("char values is less than 1 character")
-	}
-
-	if valLen == 4 && values[0][1] == '\\' {
-		switch values[0][1] {
-		case '\'':
-			*charValue = '\''
-			return nil
-		case '"':
-			*charValue = '"'
-			return nil
-		case '\\':
-			*charValue = '\\'
-			return nil
-		case 'a':
-			*charValue = '\a'
-			return nil
-		case 'b':
-			*charValue = '\b'
-			return nil
-		case 'f':
-			*charValue = '\f'
-			return nil
-		case 'n':
-			*charValue = '\n'
-			return nil
-		case 'r':
-			*charValue = '\r'
-			return nil
-		case 't':
-			*charValue = '\t'
-			return nil
-		case 'v':
-			*charValue = '\v'
-			return nil
-		// TODO Maybe Include Hex Chars?
-		// Prob best if those are hexidecimal numerics
-		default:
-			return errors.New("unrecognized escape character")
-		}
-	}
-
-	if valLen > 3 {
-		return errors.New("char value is more than 1 character")
-	}
-
-	*charValue = Char(rune(values[0][1]))
-
-	return nil
-}
-
-type CharGrammar struct {
+type Char struct {
 	Position lexer.Position
-	Val      Char `@SINGLE_QUOTED_VAL`
+	Val      string `@SINGLE_QUOTED_VAL`
 }
 
-func (f CharGrammar) Value() {}
-func (f CharGrammar) Pos() lexer.Position {
+func (f Char) Value() container.Tree[string] {
+	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+}
+func (f Char) Pos() lexer.Position {
 	return f.Position
+}
+func (f Char) IsGroup() bool {
+	return false
 }

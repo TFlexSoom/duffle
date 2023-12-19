@@ -7,8 +7,18 @@ type Tree[V any] interface {
 	IsLeaf() bool
 	AddChild(V) Tree[V]
 	GetChild(int) Tree[V]
-	GetChildren() []V
+	GetChildren() []Tree[V]
+	GetChildrenData() []V
 	AllData() []V
+}
+
+func AddChildren[V any](self Tree[V], other Tree[V]) Tree[V] {
+	self.AddChild(other.GetValue())
+	for _, child := range other.GetChildren() {
+		AddChildren[V](self.GetChild(0), child)
+	}
+
+	return self
 }
 
 func TreeCollector[V any](

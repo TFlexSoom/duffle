@@ -10,7 +10,9 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/tflexsoom/duffle/internal/container"
 	"github.com/tflexsoom/duffle/internal/files"
+	"github.com/tflexsoom/duffle/internal/intermediate"
 	"github.com/tflexsoom/duffle/internal/parsing/util"
 )
 
@@ -87,37 +89,90 @@ type Configuration struct {
 type Assignment struct {
 	Pos lexer.Position
 
-	FirstName  *string    `@IDENTIFIER`
-	SecondName string     `("." @IDENTIFIER )?`
+	FirstName  string     `@IDENTIFIER`
+	SecondName *string    `("." @IDENTIFIER )?`
 	Value      util.Value `WHITESPACE* "=" WHITESPACE* @@ WHITESPACE* EOL`
+}
+
+func (a Assignment) GetDataConfig() intermediate.DataConfig {
+	firstName := ""
+	secondName := a.FirstName
+	if a.SecondName != nil {
+		firstName = secondName
+		secondName = *a.SecondName
+	}
+
+	return intermediate.DataConfig{
+		FirstName:  firstName,
+		SecondName: secondName,
+		Values:     a.Value.Value(),
+	}
 }
 
 type StringGrammar struct {
 	Position lexer.Position
-	Val      util.String `(@IDENTIFIER | @QUOTED_VAL | @TEXT) (@WHITESPACE* (@IDENTIFIER | @TEXT))*`
+	Val      string `(@IDENTIFIER | @QUOTED_VAL | @TEXT) (@WHITESPACE* (@IDENTIFIER | @TEXT))*`
 }
 
-func (f StringGrammar) Value() {}
+func (f StringGrammar) Value() container.Tree[string] {
+	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+}
+
 func (f StringGrammar) Pos() lexer.Position {
 	return f.Position
+}
+func (f StringGrammar) IsGroup() bool {
+	return false
 }
 
 type List struct {
 	Position lexer.Position
-	Values   []util.Value `"[" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE*"]"`
+	Vals     []util.Value `"[" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE*"]"`
 }
 
-func (l List) Value() {}
+func (l List) Value() container.Tree[string] {
+	result := container.NewGraphTreeCap[string](2, uint(len(l.Vals)))
+
+	for i, val := range l.Vals {
+		if val.IsGroup() {
+			container.AddChildren(result.GetChild(i), (val.Value()))
+		} else {
+			result.AddChild(val.Value().GetValue())
+		}
+	}
+
+	return result
+}
+
 func (l List) Pos() lexer.Position {
 	return l.Position
+}
+func (f List) IsGroup() bool {
+	return true
 }
 
 type Struct struct {
 	Position lexer.Position
-	Fields   []util.Value `"(" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE* ")"`
+	Vals     []util.Value `"(" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE* ")"`
 }
 
-func (s Struct) Value() {}
+func (s Struct) Value() container.Tree[string] {
+	result := container.NewGraphTreeCap[string](2, uint(len(s.Vals)))
+
+	for i, val := range s.Vals {
+		if val.IsGroup() {
+			container.AddChildren(result.GetChild(i), (val.Value()))
+		} else {
+			result.AddChild(val.Value().GetValue())
+		}
+	}
+
+	return result
+}
+
 func (s Struct) Pos() lexer.Position {
 	return s.Position
+}
+func (s Struct) IsGroup() bool {
+	return true
 }

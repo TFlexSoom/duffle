@@ -6,35 +6,34 @@
 package util
 
 import (
-	"strings"
-
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/tflexsoom/duffle/internal/container"
 )
 
 //// Grammar
 
 type Value interface {
-	Value()
+	Value() container.Tree[string]
 	Pos() lexer.Position
+	IsGroup() bool
 }
 
 const BooleanRegex = `true|false`
 
-type Bool bool
-
-func (boolean *Bool) Capture(values []string) error {
-	*boolean = values[0] == "true"
-	return nil
-}
-
 type BoolGrammar struct {
 	Position lexer.Position
-	Val      Bool `@( "true" | "false" )`
+	Val      string `@( "true" | "false" )`
 }
 
-func (b BoolGrammar) Value() {}
+func (b BoolGrammar) Value() container.Tree[string] {
+	return container.NewGraphTreeCap[string](1, 1).AddChild(b.Val)
+
+}
 func (b BoolGrammar) Pos() lexer.Position {
 	return b.Position
+}
+func (b BoolGrammar) IsGroup() bool {
+	return false
 }
 
 const DecimalTagName = "DECIMAL"
@@ -42,12 +41,17 @@ const DecimalRegex = `[\d]+\.[\d]*`
 
 type FloatGrammar struct {
 	Position lexer.Position
-	Val      float64 `@DECIMAL`
+	Val      string `@DECIMAL`
 }
 
-func (f FloatGrammar) Value() {}
+func (f FloatGrammar) Value() container.Tree[string] {
+	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+}
 func (f FloatGrammar) Pos() lexer.Position {
 	return f.Position
+}
+func (f FloatGrammar) IsGroup() bool {
+	return false
 }
 
 const IntTagName = "INTEGER"
@@ -55,34 +59,34 @@ const IntRegex = `[\d]+`
 
 type IntGrammar struct {
 	Position lexer.Position
-	Val      int `@INTEGER`
+	Val      string `@INTEGER`
 }
 
-func (f IntGrammar) Value() {}
+func (f IntGrammar) Value() container.Tree[string] {
+	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+}
 func (f IntGrammar) Pos() lexer.Position {
 	return f.Position
+}
+func (f IntGrammar) IsGroup() bool {
+	return false
 }
 
 const QuotedValTagName = "QUOTED_VAL"
 const QuotedValRegex = `"[^"]*"`
 
-type String string
-
-func (stringVal *String) Capture(values []string) error {
-	if stringVal == nil {
-		*stringVal = ""
-	}
-
-	*stringVal += String(strings.Join(values, ""))
-	return nil
-}
-
 type StringGrammar struct {
 	Position lexer.Position
-	Val      String `@QUOTED_VAL`
+	Val      string `@QUOTED_VAL`
 }
 
-func (f StringGrammar) Value() {}
+func (f StringGrammar) Value() container.Tree[string] {
+	return container.NewGraphTreeCap[string](1, 1).AddChild(f.Val)
+}
+
 func (f StringGrammar) Pos() lexer.Position {
 	return f.Position
+}
+func (f StringGrammar) IsGroup() bool {
+	return false
 }

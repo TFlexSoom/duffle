@@ -75,7 +75,21 @@ func (lt *LinkedTreeNode[V]) GetChild(index int) Tree[V] {
 	return &lt.Children[index]
 }
 
-func (lt *LinkedTreeNode[V]) GetChildren() []V {
+func (lt *LinkedTreeNode[V]) GetChildren() []Tree[V] {
+	if lt.Children == nil {
+		return []Tree[V]{}
+	}
+
+	result := make([]Tree[V], 0, len(lt.Children))
+
+	for _, child := range lt.Children {
+		result = append(result, (&child))
+	}
+
+	return result
+}
+
+func (lt *LinkedTreeNode[V]) GetChildrenData() []V {
 	if lt.Children == nil {
 		return []V{}
 	}

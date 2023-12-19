@@ -74,7 +74,22 @@ func (st *GraphTree[V]) GetChild(index int) Tree[V] {
 	}
 }
 
-func (st *GraphTree[V]) GetChildren() []V {
+func (st *GraphTree[V]) GetChildren() []Tree[V] {
+	relation := (*st.Relationships)[st.CurrentIndex]
+	if relation == nil {
+		return nil
+	}
+
+	result := make([]Tree[V], 0, st.BreadthAlloc)
+
+	for _, childIndex := range relation {
+		result = append(result, st.GetChild(int(childIndex)))
+	}
+
+	return result
+}
+
+func (st *GraphTree[V]) GetChildrenData() []V {
 	relation := (*st.Relationships)[st.CurrentIndex]
 	if relation == nil {
 		return nil

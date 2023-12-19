@@ -11,3 +11,9 @@ custom capacities such that we can change them at runtime if desired.
 
 ## Notes And Desires
 If there is further findings between the implementations, write them here
+
+### Discovery From 12/19/2023
+One thing I do realize is with a single base object (the graph/map implementation) you can capture the capacity
+for your tree in a singular struct which would be copied either by reference or otherwise in a LinkedListMode.
+__Maybe we need to do some reframing solution so it can be done with linkedlists__ At least in theory we are
+getting a memory savings of some sort with the Graph Implementation.

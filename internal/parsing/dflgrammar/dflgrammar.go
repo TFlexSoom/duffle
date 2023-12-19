@@ -62,7 +62,7 @@ func GetDflParser() (files.SourceFileParser, error) {
 			util.FloatGrammar{},
 			util.IntGrammar{},
 			util.StringGrammar{},
-			CharGrammar{},
+			Char{},
 		),
 	)
 

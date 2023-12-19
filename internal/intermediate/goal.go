@@ -14,7 +14,7 @@ const (
 type SenimentExpression struct {
 	TypeId TypeId
 	Op     OpCode
-	Value  []byte
+	Value  []string
 }
 
 type SentimentInput struct {
@@ -25,7 +25,7 @@ type SentimentInput struct {
 type Sentiment struct {
 	Annotations []string
 	Name        string
-	Inputs      SentimentInput
+	Inputs      []SentimentInput
 	Definition  container.Tree[SenimentExpression]
 }
 
