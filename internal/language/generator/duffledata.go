@@ -1,19 +1,11 @@
-// author: Tristan Hilbert
-// date: 8/29/2023
-// filename: ldatGrammar.go
-// desc: Parsing Grammar to Build AST for ldat files
-// notes: Might trade this out for a TOML parser instead!
-package ddatgrammar
+package generator
 
 import (
 	"io"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/tflexsoom/duffle/internal/container"
 	"github.com/tflexsoom/duffle/internal/files"
-	"github.com/tflexsoom/duffle/internal/intermediate"
-	"github.com/tflexsoom/duffle/internal/parsing/util"
 )
 
 // // Lexer
@@ -78,43 +70,66 @@ func GetDdatParser() (files.SourceFileParser, error) {
 	return &wrapped, nil
 }
 
-//// Grammar
+package ddatgrammar
 
-type Configuration struct {
-	Pos lexer.Position
+import (
+	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/tflexsoom/duffle/internal/container"
+	"github.com/tflexsoom/duffle/internal/intermediate"
+	"github.com/tflexsoom/duffle/internal/parsing/util"
+)
 
-	Assignments []Assignment `(@@ EOL*)*`
+type DuffleDataValue interface {
+	DuffleValue() container.Tree[intermediate.DataValue]
+	Pos() lexer.Position
+	IsGroup() bool
 }
 
-type Assignment struct {
-	Pos lexer.Position
+// -- Boolean Grammar
+func (b util.BoolGrammar) DuffleValue() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_BOOLEAN,
+			TextValue: b.Val,
+		})
 
-	FirstName  string     `@IDENTIFIER`
-	SecondName *string    `("." @IDENTIFIER )?`
-	Value      util.Value `WHITESPACE* "=" WHITESPACE* @@ WHITESPACE* EOL`
 }
 
-func (a Assignment) GetDataConfig() intermediate.DataConfig {
-	firstName := ""
-	secondName := a.FirstName
-	if a.SecondName != nil {
-		firstName = secondName
-		secondName = *a.SecondName
-	}
-
-	return intermediate.DataConfig{
-		FirstName:  firstName,
-		SecondName: secondName,
-		Values:     a.Value.Value(),
-	}
+func (b util.BoolGrammar) IsGroup() bool {
+	return false
 }
 
-type StringGrammar struct {
-	Position lexer.Position
-	Val      string `(@IDENTIFIER | @QUOTED_VAL | @TEXT) (@WHITESPACE* (@IDENTIFIER | @TEXT))*`
+// -- Float Grammar
+func (f util.FloatGrammar) DuffleValue() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_DECIMAL,
+			TextValue: f.Val,
+		})
+
 }
 
-func (f StringGrammar) Value() container.Tree[intermediate.DataValue] {
+func (f util.FloatGrammar) IsGroup() bool {
+	return false
+}
+
+// -- Int Grammar
+
+func (f util.IntGrammar) DuffleValue() container.Tree[intermediate.DataValue] {
+	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
+		intermediate.DataValue{
+			Type:      intermediate.TYPEID_INTEGER,
+			TextValue: f.Val,
+		})
+}
+
+func (f util.IntGrammar) IsGroup() bool {
+	return false
+}
+
+// -- String Grammar
+
+func (f StringGrammar) DuffleValue() container.Tree[intermediate.DataValue] {
 	return container.NewGraphTreeCap[intermediate.DataValue](1, 1).AddChild(
 		intermediate.DataValue{
 			Type:      intermediate.TYPEID_TEXT,
@@ -122,19 +137,13 @@ func (f StringGrammar) Value() container.Tree[intermediate.DataValue] {
 		})
 }
 
-func (f StringGrammar) Pos() lexer.Position {
-	return f.Position
-}
 func (f StringGrammar) IsGroup() bool {
 	return false
 }
 
-type List struct {
-	Position lexer.Position
-	Vals     []util.Value `"[" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE*"]"`
-}
+// -- List Grammar
 
-func (l List) Value() container.Tree[intermediate.DataValue] {
+func (l List) DuffleValue() container.Tree[intermediate.DataValue] {
 	result := container.NewGraphTreeCap[intermediate.DataValue](2, uint(len(l.Vals)))
 	result.SetValue(
 		intermediate.DataValue{
@@ -145,28 +154,22 @@ func (l List) Value() container.Tree[intermediate.DataValue] {
 
 	for _, val := range l.Vals {
 		if val.IsGroup() {
-			container.AddChildren(result, (val.Value()))
+			container.AddChildren(result, (val.DuffleValue()))
 		} else {
-			result.AddChild(val.Value().GetValue())
+			result.AddChild(val.DuffleValue().GetValue())
 		}
 	}
 
 	return result
 }
 
-func (l List) Pos() lexer.Position {
-	return l.Position
-}
 func (f List) IsGroup() bool {
 	return true
 }
 
-type Struct struct {
-	Position lexer.Position
-	Vals     []util.Value `"(" WHITESPACE* EOL? WHITESPACE* @@? ("," EOL? WHITESPACE* @@)* WHITESPACE* EOL? WHITESPACE* ")"`
-}
+// -- Struct Grammar
 
-func (s Struct) Value() container.Tree[intermediate.DataValue] {
+func (s Struct) DuffleValue() container.Tree[intermediate.DataValue] {
 	result := container.NewGraphTreeCap[intermediate.DataValue](2, uint(len(s.Vals)))
 	result.SetValue(
 		intermediate.DataValue{
@@ -177,18 +180,15 @@ func (s Struct) Value() container.Tree[intermediate.DataValue] {
 
 	for _, val := range s.Vals {
 		if val.IsGroup() {
-			container.AddChildren(result, (val.Value()))
+			container.AddChildren(result, (val.DuffleValue()))
 		} else {
-			result.AddChild(val.Value().GetValue())
+			result.AddChild(val.DuffleValue().GetValue())
 		}
 	}
 
 	return result
 }
 
-func (s Struct) Pos() lexer.Position {
-	return s.Position
-}
 func (s Struct) IsGroup() bool {
 	return true
 }

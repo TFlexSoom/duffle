@@ -1,8 +1,4 @@
-// author: Tristan Hilbert
-// date: 8/29/2023
-// filename: dflimport.go
-// desc: Parsing Grammar for Imports
-package dflgrammar
+package function
 
 import "github.com/alecthomas/participle/v2/lexer"
 
