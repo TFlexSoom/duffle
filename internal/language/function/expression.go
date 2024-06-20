@@ -1,13 +1,6 @@
-// author: Tristan Hilbert
-// date: 8/29/2023
-// filename: dflexpression.go
-// desc: Parsing Grammar to Build Expressions of Different Types
-package dflgrammar
+package function
 
-import (
-	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/tflexsoom/duffle/internal/parsing/util"
-)
+import "github.com/alecthomas/participle/v2/lexer"
 
 type BlockExpression interface {
 	Block()

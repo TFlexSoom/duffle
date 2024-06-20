@@ -1,8 +1,4 @@
-// author: Tristan Hilbert
-// date: 8/29/2023
-// filename: dflexpression.go
-// desc: Parsing Grammar to Build Functions of different types
-package dflgrammar
+package function
 
 import "github.com/alecthomas/participle/v2/lexer"
 
@@ -14,17 +10,6 @@ type FunctionModulePart struct {
 func (modPart FunctionModulePart) ModulePart() {}
 func (modPart FunctionModulePart) Pos() lexer.Position {
 	return modPart.Position
-}
-
-type FunctionName struct {
-	Name       string
-	IsOperator bool
-}
-
-func (fname *FunctionName) Capture(values []string) error {
-	fname.Name = values[0]
-	fname.IsOperator = !identifierRegex.MatchString(values[0])
-	return nil
 }
 
 type FunctionDefinition interface {
